@@ -1,5 +1,5 @@
 import { requireUser } from "@/lib/auth/guard";
-import { runModel, type ModelInputs } from "@/lib/modelling/run";
+import { runModel, runScenarios, runStressTest, type ModelInputs } from "@/lib/modelling/run";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +33,9 @@ export default async function ModellerPage({ searchParams }: { searchParams: Rec
   };
 
   const r = runModel(inputs);
+  const scenarios = runScenarios(inputs);
+  const stress = runStressTest(inputs);
+  const stressColour = stress.verdict === "Holds comfortably" ? "#1f6f54" : stress.verdict === "Tight" ? "#b8860b" : "#b03a2e";
 
   return (
     <section>
@@ -112,6 +115,43 @@ export default async function ModellerPage({ searchParams }: { searchParams: Rec
           Chance of a year with a cash shortfall: <strong>{Math.round(r.mc.probCashShortfall)}%</strong>. The range is the
           spread of outcomes across 300 simulated paths — not a prediction, a map of how wide the outcomes genuinely are.
         </p>
+      </div>
+
+      {/* Stress test */}
+      <div className="panel" style={{ borderLeft: `5px solid ${stressColour}` }}>
+        <h2>Stress test — can they hold it?</h2>
+        <p className="muted" style={{ marginTop: -6, marginBottom: 12 }}>Shock applied: {stress.shock}.</p>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 14, marginBottom: 12, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 22, fontWeight: 700, color: stressColour }}>{stress.verdict}</span>
+          <span className="muted">serviceability holds at {Math.round(stress.margin * 100)}% of the loan under stress</span>
+        </div>
+        <table>
+          <tbody>
+            <tr><td className="muted">Year-1 weekly cashflow</td><td>{money(stress.baseWeekly1)}/wk → <strong style={{ color: "#b03a2e" }}>{money(stress.stressedWeekly1)}/wk</strong> under stress</td></tr>
+            <tr><td className="muted">Stressed IRR</td><td>{pct(stress.stressedIrr)}</td></tr>
+            <tr><td className="muted">Borrowing capacity vs loan</td><td>{money(stress.capacity)} vs {money(stress.loanRequired)} required</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Scenarios */}
+      <div className="panel">
+        <h2>Scenarios</h2>
+        <p className="muted" style={{ marginTop: -6, marginBottom: 12 }}>The same property under discrete &quot;what ifs&quot; — the cases a client actually understands.</p>
+        <table>
+          <thead><tr><th>Scenario</th><th>IRR</th><th>Year-1 weekly</th><th>End equity</th><th>Verdict</th></tr></thead>
+          <tbody>
+            {scenarios.map((s) => (
+              <tr key={s.name}>
+                <td className="lbl">{s.name}</td>
+                <td>{pct(s.irr)}</td>
+                <td style={{ color: s.weekly1 < 0 ? "#b03a2e" : "#1f6f54" }}>{money(s.weekly1)}</td>
+                <td>{money(s.equityEnd)}</td>
+                <td><span className="badge">{s.band}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {/* Projection */}
