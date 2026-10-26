@@ -1,7 +1,7 @@
 import { requireUser } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
-import { listClients, getClient } from "@/lib/domain/service";
-import { saveClientFinancesAction } from "@/app/actions";
+import { listClients, getClient, listReportSnapshots } from "@/lib/domain/service";
+import { saveClientFinancesAction, saveRunAction } from "@/app/actions";
 import { runModel, runScenarios, runStressTest, type ModelInputs } from "@/lib/modelling/run";
 
 export const dynamic = "force-dynamic";
@@ -69,6 +69,29 @@ export default async function ModellerPage({ searchParams }: { searchParams: Rec
   const stress = runStressTest(inputs);
   const stressColour = stress.verdict === "Holds comfortably" ? "#1f6f54" : stress.verdict === "Tight" ? "#b8860b" : "#b03a2e";
 
+  // Saved runs on this client's file (newest first from the repository).
+  const snaps = client ? (await listReportSnapshots(tenantId)).filter((x) => x.clientId === client.id) : [];
+
+  // Shared hidden fields so "Save position" and "Save run" persist exactly what
+  // is currently on screen (run first to apply any URL changes).
+  const runFields: [string, string][] = client && pos ? [
+    ["clientId", client.id],
+    ["address", inputs.address ?? ""],
+    ["state", inputs.state],
+    ["price", String(inputs.price)],
+    ["weeklyRent", String(inputs.weeklyRent)],
+    ["growthPct", String(inputs.growthPct)],
+    ["ratePct", String(inputs.ratePct)],
+    ["depositPct", String(inputs.depositPct)],
+    ["grossIncome", String(grossIncome)],
+    ["partnerIncome", String(pos.partnerIncome)],
+    ["livingExpMonthly", String(pos.livingExpMonthly)],
+    ["dependants", String(pos.dependants)],
+    ["monthlyCommitments", String(pos.monthlyCommitments)],
+    ["cardLimits", String(pos.cardLimits)],
+    ["hecsBalance", String(pos.hecsBalance)],
+  ] : [];
+
   return (
     <section>
       <h1>Modeller</h1>
@@ -125,20 +148,46 @@ export default async function ModellerPage({ searchParams }: { searchParams: Rec
         </form>
 
         {client && pos && (
-          <form action={saveClientFinancesAction} style={{ marginTop: 10 }}>
-            <input type="hidden" name="clientId" value={client.id} />
-            <input type="hidden" name="grossIncome" value={String(grossIncome)} />
-            <input type="hidden" name="partnerIncome" value={String(pos.partnerIncome)} />
-            <input type="hidden" name="livingExpMonthly" value={String(pos.livingExpMonthly)} />
-            <input type="hidden" name="dependants" value={String(pos.dependants)} />
-            <input type="hidden" name="monthlyCommitments" value={String(pos.monthlyCommitments)} />
-            <input type="hidden" name="cardLimits" value={String(pos.cardLimits)} />
-            <input type="hidden" name="hecsBalance" value={String(pos.hecsBalance)} />
-            <button className="btn ghost" type="submit">Save this position to {client.name}</button>
-            <span className="muted" style={{ fontSize: 11, marginLeft: 10 }}>Saves the figures currently shown (run first to apply URL changes).</span>
-          </form>
+          <>
+            <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+              <form action={saveRunAction}>
+                {runFields.map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
+                <button className="btn" type="submit">Save this run to {client.name}</button>
+              </form>
+              <form action={saveClientFinancesAction}>
+                {runFields.map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
+                <button className="btn ghost" type="submit">Save position to {client.name}</button>
+              </form>
+            </div>
+            <span className="muted" style={{ fontSize: 11 }}>Both save the figures currently shown — run first to apply any changes.</span>
+          </>
         )}
       </div>
+
+      {/* Saved runs on this client's file */}
+      {client && (
+        <div className="panel">
+          <h2>Saved runs for {client.name}</h2>
+          {snaps.length === 0
+            ? <p className="muted">No saved runs yet. Model a property above and “Save this run” to start building {client.name}&apos;s file.</p>
+            : <table>
+                <thead><tr><th>Date</th><th>Property</th><th>Verdict</th><th>IRR</th><th>Yr-1 weekly</th><th>Capacity</th><th>Stress</th></tr></thead>
+                <tbody>
+                  {snaps.map((snap) => (
+                    <tr key={snap.id}>
+                      <td className="lbl">{new Date(snap.createdAt).toLocaleDateString("en-AU")}</td>
+                      <td className="lbl">{snap.payload.address || snap.title || "—"}</td>
+                      <td><span className="badge" style={{ background: "#eef3f0", color: bandColour(snap.payload.verdictBand) }}>{snap.payload.verdictBand}</span> {snap.payload.verdictScore}</td>
+                      <td>{pct(snap.payload.irr)}</td>
+                      <td style={{ color: snap.payload.weekly1 < 0 ? "#b03a2e" : "#1f6f54" }}>{money(snap.payload.weekly1)}</td>
+                      <td>{money(snap.payload.capacity)}</td>
+                      <td>{snap.payload.stressVerdict}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>}
+        </div>
+      )}
 
       {/* Verdict */}
       <div className="panel" style={{ borderLeft: `5px solid ${bandColour(r.verdict.band)}` }}>

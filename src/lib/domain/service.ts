@@ -2,7 +2,7 @@
    layer above the repository. UI and server actions call these, never the
    repository directly. */
 import { getRepository } from "@/lib/data";
-import type { BusinessDocument, Client, Contact, Property } from "./types";
+import type { BusinessDocument, Client, Contact, Property, ReportSnapshot } from "./types";
 
 const uid = (): string =>
   globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : `id-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -28,6 +28,15 @@ export const listProperties = (tenantId: string): Promise<Property[]> => getRepo
 export const addProperty = (tenantId: string, input: { address: string } & Partial<Property>): Promise<Property> =>
   getRepository().create<Property>("properties", { ...input, id: uid(), tenantId, createdAt: nowISO() } as Property);
 export const removeProperty = (tenantId: string, id: string): Promise<boolean> => getRepository().remove("properties", tenantId, id);
+
+// --- Report snapshots (saved modelling runs on a client's file; append-only) ---
+export const listReportSnapshots = (tenantId: string): Promise<ReportSnapshot[]> =>
+  getRepository().list<ReportSnapshot>("report_snapshots", tenantId);
+export const addReportSnapshot = (
+  tenantId: string,
+  input: { payload: ReportSnapshot["payload"] } & Partial<ReportSnapshot>,
+): Promise<ReportSnapshot> =>
+  getRepository().create<ReportSnapshot>("report_snapshots", { ...input, id: uid(), tenantId, createdAt: nowISO() } as ReportSnapshot);
 
 // --- Business documents (business development log) ---
 export const listBusinessDocs = (tenantId: string): Promise<BusinessDocument[]> =>

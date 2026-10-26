@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
 import * as svc from "@/lib/domain/service";
 import type { BusinessDocStatus, PropertyStatus } from "@/lib/domain/types";
+import { runModel, runStressTest, type ModelInputs } from "@/lib/modelling/run";
 
 const s = (fd: FormData, k: string): string | undefined => {
   const v = fd.get(k);
@@ -47,6 +48,51 @@ export async function saveClientFinancesAction(fd: FormData) {
     hecsBalance: n(fd, "hecsBalance"),
   };
   await svc.updateClient(tenantId, id, { finances });
+  revalidatePath("/modeller");
+}
+export async function saveRunAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const clientId = s(fd, "clientId");
+  if (!clientId) return;
+  const client = await svc.getClient(tenantId, clientId);
+  if (!client) return;
+
+  // Re-run the model server-side from the submitted inputs, so the saved
+  // snapshot always matches the engine rather than trusting client-sent figures.
+  const inputs: ModelInputs = {
+    address: s(fd, "address"),
+    state: s(fd, "state") ?? "NSW",
+    price: n(fd, "price") ?? 0,
+    weeklyRent: n(fd, "weeklyRent") ?? 0,
+    growthPct: n(fd, "growthPct") ?? 0,
+    ratePct: n(fd, "ratePct") ?? 0,
+    depositPct: n(fd, "depositPct") ?? 0,
+    grossIncome: n(fd, "grossIncome") ?? 0,
+    clientName: client.name,
+    partnerIncome: n(fd, "partnerIncome"),
+    livingExpMonthly: n(fd, "livingExpMonthly"),
+    dependants: n(fd, "dependants"),
+    monthlyCommitments: n(fd, "monthlyCommitments"),
+    cardLimits: n(fd, "cardLimits"),
+    hecsBalance: n(fd, "hecsBalance"),
+  };
+  const r = runModel(inputs);
+  const stress = runStressTest(inputs);
+  await svc.addReportSnapshot(tenantId, {
+    clientId,
+    title: inputs.address || "Modelled run",
+    provenance: { label: r.provenanceLabel },
+    payload: {
+      address: inputs.address ?? "", state: inputs.state, price: inputs.price, weeklyRent: inputs.weeklyRent,
+      depositPct: inputs.depositPct, growthPct: inputs.growthPct, ratePct: inputs.ratePct,
+      verdictBand: r.verdict.band, verdictScore: r.verdict.score,
+      irr: r.metrics.irr, weekly1: r.metrics.weekly1, grossYield: r.metrics.grossYield,
+      valueEnd: r.metrics.valueEnd, equityEnd: r.metrics.equityEnd,
+      loan: r.acq.loan, lvr: r.acq.lvr, capacity: r.serviceability.capacity, dti: r.serviceability.dti,
+      stressVerdict: stress.verdict, stressMargin: stress.margin,
+    },
+  });
   revalidatePath("/modeller");
 }
 
