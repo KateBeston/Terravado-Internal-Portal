@@ -7,6 +7,7 @@ const LINKS: [string, string][] = [
   ["/clients", "Clients"],
   ["/contacts", "Contacts"],
   ["/properties", "Properties"],
+  ["/finance", "Finance"],
 ];
 
 interface NavUser { name: string; email: string; isDev: boolean; }
