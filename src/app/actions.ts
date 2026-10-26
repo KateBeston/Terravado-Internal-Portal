@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
 import * as svc from "@/lib/domain/service";
-import type { PropertyStatus } from "@/lib/domain/types";
+import type { BusinessDocStatus, PropertyStatus } from "@/lib/domain/types";
 
 const s = (fd: FormData, k: string): string | undefined => {
   const v = fd.get(k);
@@ -63,4 +63,26 @@ export async function deletePropertyAction(fd: FormData) {
   const { tenantId } = await getCurrentTenant();
   const id = s(fd, "id");
   if (id) { await svc.removeProperty(tenantId, id); revalidatePath("/properties"); }
+}
+
+// --- Business documents ---
+export async function createBusinessDocAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const title = s(fd, "title");
+  if (!title) return;
+  await svc.addBusinessDoc(tenantId, {
+    title,
+    category: s(fd, "category"),
+    summary: s(fd, "summary"),
+    status: (s(fd, "status") as BusinessDocStatus) ?? "active",
+    link: s(fd, "link"),
+  });
+  revalidatePath("/business");
+}
+export async function deleteBusinessDocAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id");
+  if (id) { await svc.removeBusinessDoc(tenantId, id); revalidatePath("/business"); }
 }

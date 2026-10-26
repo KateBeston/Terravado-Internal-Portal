@@ -26,3 +26,13 @@ export interface Property extends Entity {
   status?: PropertyStatus;
   clientId?: string;
 }
+
+export type BusinessDocStatus = "active" | "draft" | "archived";
+
+export interface BusinessDocument extends Entity {
+  title: string;
+  category?: string;
+  summary?: string;
+  status?: BusinessDocStatus;
+  link?: string;
+}
