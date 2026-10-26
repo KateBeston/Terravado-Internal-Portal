@@ -16,6 +16,16 @@ export interface ModelInputs {
   ratePct: number;
   depositPct: number;
   grossIncome: number;
+  // Optional client position — when present, the model is run against this
+  // client's real serviceability rather than income alone. Left undefined for
+  // the generic (no-client) case, which keeps the sample position.
+  clientName?: string;
+  partnerIncome?: number;
+  livingExpMonthly?: number;
+  dependants?: number;
+  monthlyCommitments?: number;
+  cardLimits?: number;
+  hecsBalance?: number;
 }
 
 export interface ProjectionRow {
@@ -48,6 +58,20 @@ function core(inp: ModelInputs): Core {
   p.entry.deposit = inp.depositPct;
   client.income.base = inp.grossIncome;
   entity.taxableIncome = inp.grossIncome;
+
+  // Client financial position — override the sample position only for the
+  // fields actually supplied, so the generic (no-client) run is unchanged.
+  if (inp.clientName) client.name = inp.clientName;
+  if (inp.partnerIncome !== undefined) client.partner.base = inp.partnerIncome;
+  if (inp.livingExpMonthly !== undefined) client.livingExpMonthly = inp.livingExpMonthly;
+  if (inp.dependants !== undefined) client.dependants = inp.dependants;
+  if (inp.monthlyCommitments !== undefined || inp.cardLimits !== undefined || inp.hecsBalance !== undefined) {
+    const liab: any[] = [];
+    if (inp.cardLimits) liab.push({ id: "li_card", type: "Credit card", limit: inp.cardLimits, balance: 0, repayment: 0, rate: 0, lender: "" });
+    if (inp.hecsBalance) liab.push({ id: "li_hecs", type: "HECS/HELP", limit: 0, balance: inp.hecsBalance, repayment: 0, rate: 0, lender: "" });
+    if (inp.monthlyCommitments) liab.push({ id: "li_other", type: "Personal loan", limit: 0, balance: 0, repayment: inp.monthlyCommitments, rate: 0, lender: "" });
+    client.liabilities = liab;
+  }
 
   // Strip the sample property's own history/title artifacts so the verdict's
   // flags reflect the entered inputs, not 14 Sample St's backstory.

@@ -10,8 +10,11 @@ const nowISO = (): string => new Date().toISOString();
 
 // --- Clients ---
 export const listClients = (tenantId: string): Promise<Client[]> => getRepository().list<Client>("clients", tenantId);
+export const getClient = (tenantId: string, id: string): Promise<Client | null> => getRepository().get<Client>("clients", tenantId, id);
 export const addClient = (tenantId: string, input: { name: string } & Partial<Client>): Promise<Client> =>
   getRepository().create<Client>("clients", { ...input, id: uid(), tenantId, createdAt: nowISO() } as Client);
+export const updateClient = (tenantId: string, id: string, patch: Partial<Client>): Promise<Client | null> =>
+  getRepository().update<Client>("clients", tenantId, id, patch);
 export const removeClient = (tenantId: string, id: string): Promise<boolean> => getRepository().remove("clients", tenantId, id);
 
 // --- Contacts ---

@@ -1,4 +1,7 @@
 import { requireUser } from "@/lib/auth/guard";
+import { getCurrentTenant } from "@/lib/auth/tenant";
+import { listClients, getClient } from "@/lib/domain/service";
+import { saveClientFinancesAction } from "@/app/actions";
 import { runModel, runScenarios, runStressTest, type ModelInputs } from "@/lib/modelling/run";
 
 export const dynamic = "force-dynamic";
@@ -20,8 +23,16 @@ const bandColour = (band: string) => BAND_COLOUR[band] ?? "#b03a2e";
 
 export default async function ModellerPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
   await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const clients = await listClients(tenantId);
 
-  const inputs: ModelInputs = {
+  // Selected client (if any) and their stored financial position.
+  const clientId = asStr(searchParams.clientId, "");
+  const client = clientId ? (clients.find((c) => c.id === clientId) ?? (await getClient(tenantId, clientId))) : null;
+  const fin = client?.finances ?? {};
+
+  // Property inputs — unchanged, and shared by the generic and client runs.
+  const property = {
     address: asStr(searchParams.address, "22 Example St, Ashfield NSW 2131"),
     state: asStr(searchParams.state, "NSW"),
     price: numParam(searchParams.price, 1100000),
@@ -29,7 +40,28 @@ export default async function ModellerPage({ searchParams }: { searchParams: Rec
     growthPct: numParam(searchParams.growthPct, 5.5),
     ratePct: numParam(searchParams.ratePct, 6.1),
     depositPct: numParam(searchParams.depositPct, 20),
-    grossIncome: numParam(searchParams.grossIncome, 185000),
+  };
+
+  // Resolved gross income: URL -> client finances -> default.
+  const grossIncome = numParam(searchParams.grossIncome, fin.grossIncome ?? 185000);
+
+  // Client position — only resolved/applied when a client is selected, so the
+  // generic (no-client) run keeps the sample serviceability position untouched.
+  const pos = client
+    ? {
+        partnerIncome: numParam(searchParams.partnerIncome, fin.partnerIncome ?? 0),
+        livingExpMonthly: numParam(searchParams.livingExpMonthly, fin.livingExpMonthly ?? 4200),
+        dependants: numParam(searchParams.dependants, fin.dependants ?? 0),
+        monthlyCommitments: numParam(searchParams.monthlyCommitments, fin.monthlyCommitments ?? 0),
+        cardLimits: numParam(searchParams.cardLimits, fin.cardLimits ?? 0),
+        hecsBalance: numParam(searchParams.hecsBalance, fin.hecsBalance ?? 0),
+      }
+    : null;
+
+  const inputs: ModelInputs = {
+    ...property,
+    grossIncome,
+    ...(client ? { clientName: client.name, ...pos } : {}),
   };
 
   const r = runModel(inputs);
@@ -45,6 +77,16 @@ export default async function ModellerPage({ searchParams }: { searchParams: Rec
       <div className="panel">
         <h2>Inputs</h2>
         <form method="get">
+          <label className="f"><span>Model for</span>
+            <select name="clientId" defaultValue={clientId}>
+              <option value="">— Generic (no client) —</option>
+              {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </label>
+          {client
+            ? <p className="muted" style={{ fontSize: 12, marginTop: -4, marginBottom: 14 }}>Serviceability is assessed against <strong>{client.name}</strong>&apos;s position below. Change a figure and run; use “Save to client” to store it on their file.</p>
+            : <p className="muted" style={{ fontSize: 12, marginTop: -4, marginBottom: 14 }}>Pick a client to model this property against their real serviceability, or leave generic.</p>}
+
           <label className="f"><span>Property</span><input name="address" defaultValue={inputs.address} /></label>
           <div className="row">
             <label className="f"><span>Purchase price</span><input name="price" inputMode="numeric" defaultValue={String(inputs.price)} /></label>
@@ -60,14 +102,47 @@ export default async function ModellerPage({ searchParams }: { searchParams: Rec
             <label className="f"><span>Growth % p.a.</span><input name="growthPct" inputMode="numeric" defaultValue={String(inputs.growthPct)} /></label>
             <label className="f"><span>Interest rate %</span><input name="ratePct" inputMode="numeric" defaultValue={String(inputs.ratePct)} /></label>
           </div>
-          <label className="f"><span>Client gross income (annual)</span><input name="grossIncome" inputMode="numeric" defaultValue={String(inputs.grossIncome)} /></label>
+
+          <div className="eyebrow">{client ? `${client.name} — financial position` : "Client position"}</div>
+          <label className="f"><span>Client gross income (annual)</span><input name="grossIncome" inputMode="numeric" defaultValue={String(grossIncome)} /></label>
+          {client && pos && (
+            <>
+              <div className="row">
+                <label className="f"><span>Partner income (annual)</span><input name="partnerIncome" inputMode="numeric" defaultValue={String(pos.partnerIncome)} /></label>
+                <label className="f"><span>Living expenses (monthly)</span><input name="livingExpMonthly" inputMode="numeric" defaultValue={String(pos.livingExpMonthly)} /></label>
+              </div>
+              <div className="row">
+                <label className="f"><span>Dependants</span><input name="dependants" inputMode="numeric" defaultValue={String(pos.dependants)} /></label>
+                <label className="f"><span>Other repayments (monthly)</span><input name="monthlyCommitments" inputMode="numeric" defaultValue={String(pos.monthlyCommitments)} /></label>
+              </div>
+              <div className="row">
+                <label className="f"><span>Credit-card limits (total)</span><input name="cardLimits" inputMode="numeric" defaultValue={String(pos.cardLimits)} /></label>
+                <label className="f"><span>HECS/HELP balance</span><input name="hecsBalance" inputMode="numeric" defaultValue={String(pos.hecsBalance)} /></label>
+              </div>
+            </>
+          )}
           <button className="btn" type="submit">Run the model</button>
         </form>
+
+        {client && pos && (
+          <form action={saveClientFinancesAction} style={{ marginTop: 10 }}>
+            <input type="hidden" name="clientId" value={client.id} />
+            <input type="hidden" name="grossIncome" value={String(grossIncome)} />
+            <input type="hidden" name="partnerIncome" value={String(pos.partnerIncome)} />
+            <input type="hidden" name="livingExpMonthly" value={String(pos.livingExpMonthly)} />
+            <input type="hidden" name="dependants" value={String(pos.dependants)} />
+            <input type="hidden" name="monthlyCommitments" value={String(pos.monthlyCommitments)} />
+            <input type="hidden" name="cardLimits" value={String(pos.cardLimits)} />
+            <input type="hidden" name="hecsBalance" value={String(pos.hecsBalance)} />
+            <button className="btn ghost" type="submit">Save this position to {client.name}</button>
+            <span className="muted" style={{ fontSize: 11, marginLeft: 10 }}>Saves the figures currently shown (run first to apply URL changes).</span>
+          </form>
+        )}
       </div>
 
       {/* Verdict */}
       <div className="panel" style={{ borderLeft: `5px solid ${bandColour(r.verdict.band)}` }}>
-        <h2>Verdict</h2>
+        <h2>Verdict{client ? ` — for ${client.name}` : ""}</h2>
         <div style={{ display: "flex", alignItems: "baseline", gap: 14, marginBottom: 12 }}>
           <span style={{ fontSize: 26, fontWeight: 700, color: bandColour(r.verdict.band) }}>{r.verdict.band}</span>
           <span className="muted">score {r.verdict.score}/100</span>
@@ -100,7 +175,9 @@ export default async function ModellerPage({ searchParams }: { searchParams: Rec
                 <td className="muted">End equity (yr 10)</td><td><strong>{money(r.metrics.equityEnd)}</strong></td></tr>
           </tbody>
         </table>
-        <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>Assessed against {r.serviceability.lender}.</div>
+        <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
+          Assessed against {r.serviceability.lender}{client ? ` for ${client.name}` : ""}.
+        </div>
       </div>
 
       {/* Monte Carlo */}

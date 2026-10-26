@@ -32,6 +32,23 @@ export async function deleteClientAction(fd: FormData) {
   const id = s(fd, "id");
   if (id) { await svc.removeClient(tenantId, id); revalidatePath("/clients"); }
 }
+export async function saveClientFinancesAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "clientId");
+  if (!id) return;
+  const finances = {
+    grossIncome: n(fd, "grossIncome"),
+    partnerIncome: n(fd, "partnerIncome"),
+    livingExpMonthly: n(fd, "livingExpMonthly"),
+    dependants: n(fd, "dependants"),
+    monthlyCommitments: n(fd, "monthlyCommitments"),
+    cardLimits: n(fd, "cardLimits"),
+    hecsBalance: n(fd, "hecsBalance"),
+  };
+  await svc.updateClient(tenantId, id, { finances });
+  revalidatePath("/modeller");
+}
 
 // --- Contacts ---
 export async function createContactAction(fd: FormData) {
