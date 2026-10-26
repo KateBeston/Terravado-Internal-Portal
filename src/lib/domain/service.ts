@@ -25,8 +25,11 @@ export const removeContact = (tenantId: string, id: string): Promise<boolean> =>
 
 // --- Properties ---
 export const listProperties = (tenantId: string): Promise<Property[]> => getRepository().list<Property>("properties", tenantId);
+export const getProperty = (tenantId: string, id: string): Promise<Property | null> => getRepository().get<Property>("properties", tenantId, id);
 export const addProperty = (tenantId: string, input: { address: string } & Partial<Property>): Promise<Property> =>
   getRepository().create<Property>("properties", { ...input, id: uid(), tenantId, createdAt: nowISO() } as Property);
+export const updateProperty = (tenantId: string, id: string, patch: Partial<Property>): Promise<Property | null> =>
+  getRepository().update<Property>("properties", tenantId, id, patch);
 export const removeProperty = (tenantId: string, id: string): Promise<boolean> => getRepository().remove("properties", tenantId, id);
 
 // --- Report snapshots (saved modelling runs on a client's file; append-only) ---

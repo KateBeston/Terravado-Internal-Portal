@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
 import { listProperties } from "@/lib/domain/service";
 import { createPropertyAction, deletePropertyAction } from "@/app/actions";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ export default async function PropertiesPage() {
   return (
     <section>
       <h1>Properties</h1>
-      <p className="sub">Properties in active use by clients. {properties.length} on record.</p>
+      <p className="sub">Properties in active use by clients. {properties.length} on record. Open one to see its full record.</p>
 
       <div className="panel">
         <h2>Add a property</h2>
@@ -43,7 +44,7 @@ export default async function PropertiesPage() {
           <tbody>
             {properties.map((p) => (
               <tr key={p.id}>
-                <td><strong>{p.address}</strong></td>
+                <td><Link href={`/properties/${p.id}`}><strong>{p.address}</strong></Link></td>
                 <td>{p.state ?? "—"}</td>
                 <td>{money(p.price)}</td>
                 <td><span className="badge">{p.status ?? "—"}</span></td>

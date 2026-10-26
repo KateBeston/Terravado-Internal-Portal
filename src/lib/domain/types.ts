@@ -32,12 +32,46 @@ export interface Contact extends Entity {
   licence?: string;
 }
 
+/* The full property record behind the tabbed detail view. Each sub-object is a
+   tab; integrations (VG / ABS / Geoscape / CoreLogic / Domain) populate the
+   same shape a person can enter by hand, stamped with its source. */
+export interface Easement { type?: string; beneficiary?: string; width?: number; note?: string; }
+export interface Encumbrance { type?: string; detail?: string; impact?: string; }
+export interface SaleRecord { date?: string; price?: number; method?: string; note?: string; }
+
+export interface PropertyTitle {
+  titleRef?: string; lotDp?: string; zoning?: string;
+  heritage?: boolean; heritageNote?: string;
+  easements?: Easement[];
+  encumbrances?: Encumbrance[];
+}
+export interface PropertyLocality {
+  suburb?: string; locality?: string; region?: string; postcode?: string;
+  suburbMedian?: number; suburbMedianRent?: number;
+  vacancyPct?: number; daysToLease?: number; popGrowthPct?: number; annualGrowthPct?: number;
+  transport?: string; notes?: string;
+  source?: string; asAt?: string;
+}
+export interface PropertyPhysical {
+  type?: string; beds?: number; baths?: number; cars?: number;
+  landSize?: number; internalArea?: number; buildYear?: number;
+  construction?: string; notes?: string;
+}
+export interface PropertyDetails {
+  weeklyRent?: number;
+  title?: PropertyTitle;
+  locality?: PropertyLocality;
+  physical?: PropertyPhysical;
+  sales?: SaleRecord[];
+}
+
 export interface Property extends Entity {
   address: string;
   state?: string;
   price?: number;
   status?: PropertyStatus;
   clientId?: string;
+  details?: PropertyDetails;
 }
 
 /* A saved modelling run, written to a client's file (append-only). The payload

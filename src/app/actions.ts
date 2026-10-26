@@ -5,6 +5,7 @@ import { getCurrentTenant } from "@/lib/auth/tenant";
 import * as svc from "@/lib/domain/service";
 import type { BusinessDocStatus, PropertyStatus } from "@/lib/domain/types";
 import { runModel, runStressTest, type ModelInputs } from "@/lib/modelling/run";
+import { getPropertyDataProvider } from "@/lib/integrations/property-data";
 
 const s = (fd: FormData, k: string): string | undefined => {
   const v = fd.get(k);
@@ -126,6 +127,99 @@ export async function deletePropertyAction(fd: FormData) {
   const { tenantId } = await getCurrentTenant();
   const id = s(fd, "id");
   if (id) { await svc.removeProperty(tenantId, id); revalidatePath("/properties"); }
+}
+
+// --- Property record detail (tabbed) ---
+export async function savePropertyDetailsAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id"); const section = s(fd, "section");
+  if (!id || !section) return;
+  const p = await svc.getProperty(tenantId, id); if (!p) return;
+  const details = { ...(p.details ?? {}) };
+  if (section === "title") {
+    details.title = { ...(details.title ?? {}),
+      titleRef: s(fd, "titleRef"), lotDp: s(fd, "lotDp"), zoning: s(fd, "zoning"),
+      heritage: s(fd, "heritage") === "on" || s(fd, "heritage") === "true",
+      heritageNote: s(fd, "heritageNote") };
+  } else if (section === "locality") {
+    details.locality = { ...(details.locality ?? {}),
+      suburb: s(fd, "suburb"), locality: s(fd, "locality"), region: s(fd, "region"), postcode: s(fd, "postcode"),
+      suburbMedian: n(fd, "suburbMedian"), suburbMedianRent: n(fd, "suburbMedianRent"),
+      vacancyPct: n(fd, "vacancyPct"), daysToLease: n(fd, "daysToLease"),
+      popGrowthPct: n(fd, "popGrowthPct"), annualGrowthPct: n(fd, "annualGrowthPct"),
+      transport: s(fd, "transport"), notes: s(fd, "notes"), source: "manual" };
+  } else if (section === "physical") {
+    details.physical = { ...(details.physical ?? {}),
+      type: s(fd, "type"), beds: n(fd, "beds"), baths: n(fd, "baths"), cars: n(fd, "cars"),
+      landSize: n(fd, "landSize"), internalArea: n(fd, "internalArea"), buildYear: n(fd, "buildYear"),
+      construction: s(fd, "construction"), notes: s(fd, "notes") };
+  } else if (section === "rent") {
+    details.weeklyRent = n(fd, "weeklyRent");
+  }
+  await svc.updateProperty(tenantId, id, { details });
+  revalidatePath(`/properties/${id}`, "layout");
+}
+
+export async function addPropertyListItemAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id"); const list = s(fd, "list");
+  if (!id || !list) return;
+  const p = await svc.getProperty(tenantId, id); if (!p) return;
+  const details = { ...(p.details ?? {}) };
+  if (list === "sales") {
+    details.sales = [...(details.sales ?? []), { date: s(fd, "date"), price: n(fd, "price"), method: s(fd, "method"), note: s(fd, "note") }];
+  } else if (list === "easements") {
+    const title = { ...(details.title ?? {}) };
+    title.easements = [...(title.easements ?? []), { type: s(fd, "type"), beneficiary: s(fd, "beneficiary"), width: n(fd, "width"), note: s(fd, "note") }];
+    details.title = title;
+  } else if (list === "encumbrances") {
+    const title = { ...(details.title ?? {}) };
+    title.encumbrances = [...(title.encumbrances ?? []), { type: s(fd, "type"), detail: s(fd, "detail"), impact: s(fd, "impact") }];
+    details.title = title;
+  }
+  await svc.updateProperty(tenantId, id, { details });
+  revalidatePath(`/properties/${id}`, "layout");
+}
+
+export async function removePropertyListItemAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id"); const list = s(fd, "list"); const idx = Number(s(fd, "index"));
+  if (!id || !list || !isFinite(idx)) return;
+  const p = await svc.getProperty(tenantId, id); if (!p) return;
+  const details = { ...(p.details ?? {}) };
+  if (list === "sales") {
+    const a = [...(details.sales ?? [])]; a.splice(idx, 1); details.sales = a;
+  } else if (list === "easements") {
+    const title = { ...(details.title ?? {}) }; const a = [...(title.easements ?? [])]; a.splice(idx, 1); title.easements = a; details.title = title;
+  } else if (list === "encumbrances") {
+    const title = { ...(details.title ?? {}) }; const a = [...(title.encumbrances ?? [])]; a.splice(idx, 1); title.encumbrances = a; details.title = title;
+  }
+  await svc.updateProperty(tenantId, id, { details });
+  revalidatePath(`/properties/${id}`, "layout");
+}
+
+/* Integration seam — pull suburb data from the active property-data provider
+   (the stub until CoreLogic/VG/ABS keys are configured) into the Locality tab,
+   stamped with its source and as-at date. */
+export async function pullLocalityAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id"); if (!id) return;
+  const p = await svc.getProperty(tenantId, id); if (!p) return;
+  const loc = p.details?.locality?.locality || p.details?.locality?.suburb || p.address;
+  const state = p.state || p.details?.locality?.region || "NSW";
+  const snap = await getPropertyDataProvider().suburbSnapshot(loc, state);
+  const details = { ...(p.details ?? {}) };
+  details.locality = { ...(details.locality ?? {}),
+    suburbMedian: snap.medianPrice ?? details.locality?.suburbMedian,
+    vacancyPct: snap.vacancyPct ?? details.locality?.vacancyPct,
+    annualGrowthPct: snap.annualGrowthPct ?? details.locality?.annualGrowthPct,
+    source: snap.source, asAt: snap.asAt };
+  await svc.updateProperty(tenantId, id, { details });
+  revalidatePath(`/properties/${id}`, "layout");
 }
 
 // --- Business documents ---
