@@ -1,30 +1,30 @@
-feat(account): account types + capability gating (layer 1 of the account model)
+feat(account): team roles — broker-on-a-team unlocks broker features + per-page enforcement (layer 2)
 
 INTERNAL PORTAL.
 
-First layer of the account model: an account (tenant) now has a TYPE that grants
-a set of capabilities, and the portal gates features on those capabilities.
+Layer 2 of the account model: team roles and team-aware capabilities.
 
-- Account types: Mortgage broker, Investment consultant, Buyers agent, Public /
-  end investor. Core (modeller, portfolio, clients, properties, entities) is
-  shared; the type adds/removes lenders, finance, lodgement, bank data, deal
-  export, integrations and The Business.
-- lib/auth/capabilities — the capability matrix + helpers (capabilitiesFor, can,
-  labels). Features are gated on CAPABILITIES and the type grants them, so a
-  consultant who later adds a broker to the team can be granted broker
-  capabilities without rewriting checks.
-- Nav is filtered by capability; a new Account page (/account) shows the account
-  type, lets an owner/admin change it, and lists what each type enables.
-- current_tenant() now returns account_type; getCurrentTenant surfaces it.
+- Adds the 'broker' team role (alongside owner/admin/adviser/viewer). A member
+  with the Broker role grants the broker toolset (lender compare, finance, bank
+  data, lodgement, deal export) to the WHOLE account — so a consultant who adds a
+  broker to the team unlocks broker features without changing their account type.
+- effectiveCapabilities(type, roles) = account-type capabilities UNION the
+  capabilities granted by the team's roles. The nav and pages use this.
+- Per-page enforcement: /lenders, /finance and /lodgements now call
+  requireCapability() and redirect to /account if the capability is absent — so
+  gating is real, not just nav-hiding.
+- Account page gains a Team panel: lists members (with emails), lets an
+  owner/admin change a member's role, and shows the account's effective
+  capabilities (flagging when a broker on the team is the reason a feature is on).
 
-Migration 0013 (applied): tenants.account_type (default 'broker', so existing
-accounts keep full capability); owner/admin tenants_update RLS policy;
-current_tenant() rebuilt to return the type.
+Migration 0014 (applied): extends the memberships role check to include
+'broker'; adds a memberships_update RLS policy for owners/admins (via a
+non-recursive current_user_admin_tenants() helper); adds SECURITY DEFINER
+functions tenant_members() (team + emails, scoped to the caller's tenant) and
+current_tenant_roles() (drives team-aware capabilities).
 
-Next layers (separate increments): internal role refinements (broker-on-team),
-then external guest deal-sharing (cross-tenant, scoped — built last and
-carefully). Note: this layer gates the NAV; per-page capability enforcement
-lands with the sharing increment.
+Next (final layer, built deliberately): external guest deal-sharing —
+cross-tenant, deal-scoped, with invite/accept and scoped RLS.
 
 Verified: tsc --noEmit clean · verify:engine 20/20 · next build green.
 

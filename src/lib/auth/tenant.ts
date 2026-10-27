@@ -29,3 +29,24 @@ export async function getCurrentTenant(): Promise<CurrentTenant> {
     accountType: (row.account_type as string) ?? "broker",
   };
 }
+
+/** Distinct roles present on the current tenant — drives team-aware
+    capabilities (e.g. a broker on the team unlocks the broker toolset). */
+export async function getTenantRoles(): Promise<string[]> {
+  if (!IS_SUPABASE_CONFIGURED) return ["owner"];
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("current_tenant_roles");
+  if (error || !data) return [];
+  return (data as unknown[]).map((r) => (typeof r === "string" ? r : (r as { role?: string }).role ?? "")).filter(Boolean);
+}
+
+export interface TenantMember { userId: string; email: string; role: string; }
+
+/** The current tenant's members, with emails (scoped server-side to the team). */
+export async function getTenantMembers(): Promise<TenantMember[]> {
+  if (!IS_SUPABASE_CONFIGURED) return [];
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("tenant_members");
+  if (error || !data) return [];
+  return (data as any[]).map((r) => ({ userId: r.user_id, email: r.email ?? "", role: r.role ?? "viewer" }));
+}

@@ -32,12 +32,28 @@ const MATRIX: Record<AccountType, Capability[]> = {
 
 const DEFAULT_TYPE: AccountType = "broker";
 
+/* Capabilities a team ROLE grants on top of the account type. A broker on the
+   team unlocks the broker toolset for the whole account — so a consultant who
+   adds a broker gains lodgement, bank data, etc. without changing their type. */
+export const TEAM_ROLES = ["owner", "admin", "adviser", "viewer", "broker"] as const;
+export const ROLE_CAPS: Record<string, Capability[]> = {
+  broker: ["lenders", "finance", "lodgement", "bankData", "dealExport"],
+};
+
 export function normaliseAccountType(type?: string | null): AccountType {
   return type && type in MATRIX ? (type as AccountType) : DEFAULT_TYPE;
 }
 
 export function capabilitiesFor(type?: string | null): Capability[] {
   return MATRIX[normaliseAccountType(type)];
+}
+
+/* The account's effective capabilities: its type's capabilities, plus anything
+   granted by the roles present on the team. */
+export function effectiveCapabilities(type: string | null | undefined, memberRoles: string[]): Capability[] {
+  const set = new Set<Capability>(capabilitiesFor(type));
+  for (const role of memberRoles) (ROLE_CAPS[role] ?? []).forEach((c) => set.add(c));
+  return Array.from(set);
 }
 
 export function can(type: string | null | undefined, cap: Capability): boolean {

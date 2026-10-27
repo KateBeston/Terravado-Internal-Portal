@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth/guard";
+import { requireUser, requireCapability } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
 import { listLenders } from "@/lib/domain/service";
 import { assessPosition } from "@/lib/modelling/run";
@@ -17,6 +17,7 @@ const numParam = (v: string | string[] | undefined): number | undefined => {
 
 export default async function FinancePage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
   await requireUser();
+  await requireCapability("finance");
   const { tenantId } = await getCurrentTenant();
 
   const engineLenders = (await listLenders(tenantId))

@@ -2,7 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
-import { ACCOUNT_TYPES } from "@/lib/auth/capabilities";
+import { ACCOUNT_TYPES, TEAM_ROLES } from "@/lib/auth/capabilities";
 import { createClient } from "@/lib/supabase/server";
 import * as svc from "@/lib/domain/service";
 import type { BusinessDocStatus, PropertyStatus } from "@/lib/domain/types";
@@ -595,6 +595,19 @@ export async function updateAccountTypeAction(fd: FormData) {
   const sb = createClient();
   // RLS (tenants_update) restricts this to owners/admins of the tenant.
   await sb.from("tenants").update({ account_type: accountType }).eq("id", tenantId);
+  revalidatePath("/", "layout");
+  revalidatePath("/account");
+}
+export async function updateMemberRoleAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const userId = s(fd, "userId");
+  const role = s(fd, "role");
+  if (!tenantId || !userId || !role) return;
+  if (!(TEAM_ROLES as readonly string[]).includes(role)) return;
+  const sb = createClient();
+  // RLS (memberships_update) restricts this to owners/admins of the tenant.
+  await sb.from("memberships").update({ role }).eq("tenant_id", tenantId).eq("user_id", userId);
   revalidatePath("/", "layout");
   revalidatePath("/account");
 }

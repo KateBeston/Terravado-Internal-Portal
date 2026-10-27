@@ -1,8 +1,8 @@
 import { requireUser } from "@/lib/auth/guard";
-import { getCurrentTenant } from "@/lib/auth/tenant";
+import { getCurrentTenant, getTenantRoles, getTenantMembers } from "@/lib/auth/tenant";
 import { getUser } from "@/lib/auth/session";
-import { ACCOUNT_TYPES, capabilitiesFor, accountTypeLabel, normaliseAccountType, type Capability } from "@/lib/auth/capabilities";
-import { updateAccountTypeAction } from "@/app/actions";
+import { ACCOUNT_TYPES, TEAM_ROLES, effectiveCapabilities, accountTypeLabel, normaliseAccountType, type Capability } from "@/lib/auth/capabilities";
+import { updateAccountTypeAction, updateMemberRoleAction } from "@/app/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -15,9 +15,12 @@ const ALL_CAPS = Object.keys(CAP_LABELS) as Capability[];
 
 export default async function AccountPage() {
   await requireUser();
-  const [tenant, user] = await Promise.all([getCurrentTenant(), getUser()]);
+  const [tenant, user, roles, members] = await Promise.all([
+    getCurrentTenant(), getUser(), getTenantRoles(), getTenantMembers(),
+  ]);
   const current = normaliseAccountType(tenant.accountType);
-  const caps = capabilitiesFor(current);
+  const caps = effectiveCapabilities(current, roles);
+  const hasBroker = roles.includes("broker");
 
   return (
     <section>
@@ -56,7 +59,42 @@ export default async function AccountPage() {
       </div>
 
       <div className="panel">
+        <h2>Team</h2>
+        <p className="sub" style={{ marginTop: -6 }}>
+          Who is on this account, and their role. A member with the <strong>Broker</strong> role unlocks the broker toolset
+          (lender compare, finance, bank data, lodgement, deal export) for the whole account. Only an owner or admin can change roles.
+        </p>
+        <table>
+          <thead><tr><th>Member</th><th>Role</th><th></th></tr></thead>
+          <tbody>
+            {members.map((m) => (
+              <tr key={m.userId}>
+                <td><strong>{m.email || m.userId}</strong>{user?.email && m.email.toLowerCase() === user.email.toLowerCase() ? " · you" : ""}</td>
+                <td>
+                  <form action={updateMemberRoleAction} style={{ display: "flex", gap: 8, alignItems: "center", margin: 0 }}>
+                    <input type="hidden" name="userId" value={m.userId} />
+                    <select name="role" defaultValue={m.role} style={{ width: "auto" }}>
+                      {TEAM_ROLES.map((r) => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
+                    </select>
+                    <button className="btn ghost" type="submit" style={{ margin: 0, padding: "6px 12px" }}>Set</button>
+                  </form>
+                </td>
+                <td />
+              </tr>
+            ))}
+            {members.length === 0 && <tr><td colSpan={3} className="muted">Just you for now.</td></tr>}
+          </tbody>
+        </table>
+        <p className="muted" style={{ fontSize: 12 }}>
+          Inviting new teammates (and inviting external parties onto a single deal) comes with the sharing flow — the next piece.
+        </p>
+      </div>
+
+      <div className="panel">
         <h2>What this account can do</h2>
+        {hasBroker && current !== "broker" && (
+          <p className="sub" style={{ marginTop: -6 }}>A broker on the team is granting the broker toolset on top of the account type.</p>
+        )}
         <table>
           <thead><tr><th>Feature</th><th>Available</th></tr></thead>
           <tbody>
@@ -69,8 +107,8 @@ export default async function AccountPage() {
           </tbody>
         </table>
         <p className="muted" style={{ fontSize: 12 }}>
-          Features are gated on capabilities, and the account type grants them — so adding a broker to the team can unlock broker
-          features without changing anyone else&apos;s access. Team roles and inviting external parties onto single deals come next.
+          Features are gated on capabilities, and the account type (plus team roles) grants them — so adding a broker to the team
+          unlocks broker features without changing anyone else&apos;s access.
         </p>
       </div>
     </section>

@@ -1,14 +1,15 @@
 import Nav from "@/components/Nav";
 import { getUser } from "@/lib/auth/session";
-import { getCurrentTenant } from "@/lib/auth/tenant";
-import { capabilitiesFor } from "@/lib/auth/capabilities";
+import { getCurrentTenant, getTenantRoles } from "@/lib/auth/tenant";
+import { effectiveCapabilities } from "@/lib/auth/capabilities";
 import { listContacts } from "@/lib/domain/service";
 import { ENGINE_VERSION, TAX_DATA } from "@/lib/engine/tax-data";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getUser();
   const tenant = await getCurrentTenant();
-  const caps = capabilitiesFor(tenant.accountType);
+  const roles = await getTenantRoles();
+  const caps = effectiveCapabilities(tenant.accountType, roles);
 
   // Resolve the signed-in user's own person record (by email) so their name in
   // the nav links straight to it. Best-effort — never block the layout.

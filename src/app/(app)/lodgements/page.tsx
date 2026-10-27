@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth/guard";
+import { requireUser, requireCapability } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
 import { listLodgements } from "@/lib/domain/service";
 import { updateLodgementStatusAction, deleteLodgementAction } from "@/app/actions";
@@ -15,6 +15,7 @@ const money = (v?: number) => (v === undefined || v === null ? "—" : "$" + Mat
 
 export default async function LodgementsPage() {
   await requireUser();
+  await requireCapability("lodgement");
   const { tenantId } = await getCurrentTenant();
   const lodgements = await listLodgements(tenantId);
   const live = SIMPOLOGY_CONFIGURED ? "Simpology" : NEXTGEN_CONFIGURED ? "NextGen" : null;

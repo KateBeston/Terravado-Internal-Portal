@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth/guard";
+import { requireUser, requireCapability } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
 import { listLenders } from "@/lib/domain/service";
 import { createLenderAction, deleteLenderAction } from "@/app/actions";
@@ -11,6 +11,7 @@ const pct = (v?: number) => (v === undefined || v === null ? "—" : v + "%");
 
 export default async function LendersPage() {
   await requireUser();
+  await requireCapability("lenders");
   const { tenantId } = await getCurrentTenant();
   const lenders = await listLenders(tenantId);
 
