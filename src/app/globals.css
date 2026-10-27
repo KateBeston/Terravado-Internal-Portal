@@ -1,6 +1,39 @@
 :root {
-  --bg: #f7f5ef; --panel: #fff; --ink: #1a1a1a; --muted: #6b6b6b;
-  --line: #e5e2d8; --green: #1f6f54; --green-d: #17533f; --radius: 10px;
+  /* Terravado palette */
+  --primary: #2D3A21;
+  --primary-hover: #1E2716;
+  --primary-tint: #ECEFE4;
+  --success: #35573F;
+  --success-bg: #E6EDE4;
+  --warning: #463B32;
+  --warning-bg: #EEEAE4;
+  --warning-border: #CEC6BC;
+  --info: #1E4A8C;
+  --info-bg: #E4ECFA;
+  --bg: #FAF9F6;
+  --surface: #FFFFFF;
+  --border: #E3E2DD;
+  --input-border: #D6D5CF;
+  --text: #1B1E22;
+  --text-muted: #5B6068;
+
+  /* Legacy aliases — existing components reference these names, so remapping
+     them here recolours the whole portal without touching any component. */
+  --panel: var(--surface);
+  --ink: var(--text);
+  --muted: var(--text-muted);
+  --line: var(--border);
+  --green: var(--primary);
+  --green-d: var(--primary-hover);
+  --radius: 10px;
+
+  /* On-dark sidebar tones (the palette is a light theme; these are the
+     matching olive-neutral tints the dark nav needs). */
+  --nav-bg: var(--primary-hover);
+  --nav-text: #C9CCC2;
+  --nav-hover: #283420;
+  --nav-faint: #94998C;
+  --nav-line: #333B2C;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
@@ -9,19 +42,19 @@ body { background: var(--bg); color: var(--ink); font-size: 14px; line-height: 1
 a { color: inherit; text-decoration: none; }
 
 .shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
-.nav { background: #13211c; color: #e8efe9; padding: 22px 16px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; height: 100vh; }
+.nav { background: var(--nav-bg); color: var(--nav-text); padding: 22px 16px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; height: 100vh; }
 .brand { font-size: 19px; font-weight: 700; letter-spacing: -.02em; }
-.brand em { color: #6cc0a0; font-style: normal; }
-.brand small { display: block; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: #7f988d; font-weight: 500; margin-top: 4px; margin-bottom: 14px; }
-.nav a.link { padding: 9px 12px; border-radius: 8px; color: #c7d6ce; font-weight: 500; }
-.nav a.link:hover { background: #1c2f28; color: #fff; }
-.nav a.link.on { background: var(--green); color: #fff; }
+.brand em { color: var(--primary-tint); font-style: normal; }
+.brand small { display: block; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--nav-faint); font-weight: 500; margin-top: 4px; margin-bottom: 14px; }
+.nav a.link { padding: 9px 12px; border-radius: 8px; color: var(--nav-text); font-weight: 500; }
+.nav a.link:hover { background: var(--nav-hover); color: #fff; }
+.nav a.link.on { background: var(--primary); color: #fff; }
 .nav .spacer { flex: 1; }
-.nav .who { font-size: 12px; color: #9fb3a9; border-top: 1px solid #243a32; padding-top: 12px; margin-top: 8px; }
-.nav .ver { font-size: 10px; color: #6c857a; margin-top: 8px; line-height: 1.7; }
+.nav .who { font-size: 12px; color: var(--nav-faint); border-top: 1px solid var(--nav-line); padding-top: 12px; margin-top: 8px; }
+.nav .ver { font-size: 10px; color: #72776B; margin-top: 8px; line-height: 1.7; }
 .nav form { margin-top: 10px; }
-.nav button.signout { width: 100%; background: transparent; border: 1px solid #2c4339; color: #c7d6ce; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 12px; }
-.nav button.signout:hover { background: #1c2f28; }
+.nav button.signout { width: 100%; background: transparent; border: 1px solid var(--nav-line); color: var(--nav-text); padding: 8px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+.nav button.signout:hover { background: var(--nav-hover); }
 
 .main { padding: 34px 40px; max-width: 1100px; }
 h1 { font-size: 24px; letter-spacing: -.02em; margin: 0 0 4px; }
@@ -37,27 +70,27 @@ h1 { font-size: 24px; letter-spacing: -.02em; margin: 0 0 4px; }
 
 label.f { display: block; margin-bottom: 10px; }
 label.f span { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
-input, select, textarea { width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; font: inherit; background: #fff; }
-input:focus, select:focus, textarea:focus { outline: none; border-color: var(--green); }
+input, select, textarea { width: 100%; padding: 9px 11px; border: 1px solid var(--input-border); border-radius: 8px; font: inherit; background: var(--surface); color: var(--text); }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); }
 .row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-.btn { background: var(--green); color: #fff; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 6px; }
-.btn:hover { background: var(--green-d); }
+.btn { background: var(--primary); color: #fff; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 6px; }
+.btn:hover { background: var(--primary-hover); }
 
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 th { text-align: left; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--line); }
 td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
 .x { background: transparent; border: 1px solid var(--line); color: var(--muted); border-radius: 6px; width: 28px; height: 28px; cursor: pointer; line-height: 1; }
 .x:hover { border-color: #c0392b; color: #c0392b; }
-.badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 20px; background: #eef3f0; color: var(--green-d); }
+.badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 20px; background: var(--primary-tint); color: var(--primary); }
 
-.devbanner { background: #fff7e6; border: 1px solid #f0d9a0; color: #7a5a12; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 20px; }
+.devbanner { background: var(--warning-bg); border: 1px solid var(--warning-border); color: var(--warning); padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 20px; }
 
 .login-wrap { display: flex; min-height: 100vh; align-items: center; justify-content: center; }
-.login { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 34px; width: 380px; }
+.login { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 34px; width: 380px; }
 .login .brand { color: var(--ink); margin-bottom: 18px; }
-.login .brand em { color: var(--green); }
-.gbtn { width: 100%; border: 1px solid var(--line); background: #fff; padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 10px; }
-.gbtn:hover { background: #f3f1ea; }
+.login .brand em { color: var(--primary); }
+.gbtn { width: 100%; border: 1px solid var(--input-border); background: var(--surface); padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+.gbtn:hover { background: var(--primary-tint); }
 .err { color: #c0392b; font-size: 13px; margin-top: 10px; }
 .hr { height: 1px; background: var(--line); margin: 18px 0; }
 .muted { color: var(--muted); font-size: 13px; }
