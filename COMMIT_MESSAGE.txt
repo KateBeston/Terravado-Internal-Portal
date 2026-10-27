@@ -1,0 +1,40 @@
+feat(records): unify the person record — one tabbed Contact for borrowers and professionals
+
+INTERNAL PORTAL.
+
+The person record is now unified (TGS-style): Clients and Contacts are one
+record. A person carries ROLES (Borrower/applicant, Broker, Buyer's agent,
+Accountant, Solicitor...), and roles decide which tabs show. A "client" is
+simply a person with the Borrower role.
+
+Tabbed person record at /contacts/[id] (same chrome as the property record):
+- Details    — full personal detail: name, roles, DOB, residency, marital
+               status, address, ID, occupation, firm/licence/company, notes.
+- Financials — the serviceability position the Modeller assesses (income,
+               living expenses, dependants, commitments, card limits, HECS).
+               Full income-by-type / employment / assets / liabilities detail
+               lands here next.
+- Properties — properties owned/considered by the person, with add + links.
+- Modelling  — modelling runs saved to their file.
+- Legal      — documents recorded against the person.
+- Company    — their linked company (entity/role memberships come next).
+Financial tabs are shown only for people with the Borrower role.
+
+Migration 0011 (applied to live DB): adds notes/finances/details/roles to
+contacts; drops the FK constraints to clients(id); copies every client into
+contacts KEEPING THEIR IDs. Because the ids are preserved, every existing
+client_id (properties, report snapshots, lodgements, portfolio, deal pack)
+resolves to the unified record and the Modeller never breaks. The clients
+table is left dormant and dropped in a later migration.
+
+Service: client CRUD now reads/writes contacts (listClients = people with the
+Borrower role); added ensureBorrower() and person-document CRUD.
+Contacts list is now the full people directory and shows each person's roles.
+/clients lists borrowers and deep-links into the same record; /clients/[id]
+redirects to /contacts/[id].
+
+Verified: tsc --noEmit clean · verify:engine 20/20 · next build green
+(all person-record tabs compiled).
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV

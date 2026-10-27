@@ -2,26 +2,67 @@
    layer above the repository. UI and server actions call these, never the
    repository directly. */
 import { getRepository } from "@/lib/data";
-import type { BusinessDocument, Client, Contact, Lender, Lodgement, Property, ReportSnapshot } from "./types";
+import type { BusinessDocument, Client, Company, Contact, Lender, Lodgement, OwnershipEntity, PersonDocument, Property, ReportSnapshot } from "./types";
 
 const uid = (): string =>
   globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : `id-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const nowISO = (): string => new Date().toISOString();
 
-// --- Clients ---
-export const listClients = (tenantId: string): Promise<Client[]> => getRepository().list<Client>("clients", tenantId);
-export const getClient = (tenantId: string, id: string): Promise<Client | null> => getRepository().get<Client>("clients", tenantId, id);
+/* --- Clients -------------------------------------------------------------
+   Unified since 0011: the person lives in `contacts`; a "client" is a person
+   carrying the Borrower role. These names are kept so the Modeller, portfolio,
+   deal pack and lodgements (which all key off a client id) are untouched —
+   they resolve the same ids against the unified record. */
+export const BORROWER_ROLE = "Borrower";
+const hasRole = (p: Partial<Contact>, role: string): boolean => (p.roles ?? []).includes(role);
+
+export const listClients = async (tenantId: string): Promise<Client[]> => {
+  const people = await getRepository().list<Contact>("contacts", tenantId);
+  return people.filter((p) => hasRole(p, BORROWER_ROLE)) as unknown as Client[];
+};
+export const getClient = (tenantId: string, id: string): Promise<Client | null> =>
+  getRepository().get<Client>("contacts", tenantId, id);
 export const addClient = (tenantId: string, input: { name: string } & Partial<Client>): Promise<Client> =>
-  getRepository().create<Client>("clients", { ...input, id: uid(), tenantId, createdAt: nowISO() } as Client);
+  getRepository().create<Client>("contacts", { roles: [BORROWER_ROLE], ...input, id: uid(), tenantId, createdAt: nowISO() } as unknown as Client);
 export const updateClient = (tenantId: string, id: string, patch: Partial<Client>): Promise<Client | null> =>
-  getRepository().update<Client>("clients", tenantId, id, patch);
-export const removeClient = (tenantId: string, id: string): Promise<boolean> => getRepository().remove("clients", tenantId, id);
+  getRepository().update<Client>("contacts", tenantId, id, patch);
+export const removeClient = (tenantId: string, id: string): Promise<boolean> => getRepository().remove("contacts", tenantId, id);
+
+/* Give an existing person the Borrower role (so they appear as a client and
+   gain the financial tabs) without creating a duplicate record. */
+export const ensureBorrower = async (tenantId: string, contactId: string): Promise<Contact | null> => {
+  const person = await getRepository().get<Contact>("contacts", tenantId, contactId);
+  if (!person) return null;
+  if (hasRole(person, BORROWER_ROLE)) return person;
+  return getRepository().update<Contact>("contacts", tenantId, contactId, { roles: [...(person.roles ?? []), BORROWER_ROLE] });
+};
 
 // --- Contacts ---
 export const listContacts = (tenantId: string): Promise<Contact[]> => getRepository().list<Contact>("contacts", tenantId);
+export const getContact = (tenantId: string, id: string): Promise<Contact | null> => getRepository().get<Contact>("contacts", tenantId, id);
 export const addContact = (tenantId: string, input: { name: string } & Partial<Contact>): Promise<Contact> =>
   getRepository().create<Contact>("contacts", { ...input, id: uid(), tenantId, createdAt: nowISO() } as Contact);
+export const updateContact = (tenantId: string, id: string, patch: Partial<Contact>): Promise<Contact | null> =>
+  getRepository().update<Contact>("contacts", tenantId, id, patch);
 export const removeContact = (tenantId: string, id: string): Promise<boolean> => getRepository().remove("contacts", tenantId, id);
+
+// --- Companies (network organisations) ---
+export const listCompanies = (tenantId: string): Promise<Company[]> => getRepository().list<Company>("companies", tenantId);
+export const getCompany = (tenantId: string, id: string): Promise<Company | null> => getRepository().get<Company>("companies", tenantId, id);
+export const addCompany = (tenantId: string, input: { name: string } & Partial<Company>): Promise<Company> =>
+  getRepository().create<Company>("companies", { ...input, id: uid(), tenantId, createdAt: nowISO() } as Company);
+export const updateCompany = (tenantId: string, id: string, patch: Partial<Company>): Promise<Company | null> =>
+  getRepository().update<Company>("companies", tenantId, id, patch);
+export const removeCompany = (tenantId: string, id: string): Promise<boolean> => getRepository().remove("companies", tenantId, id);
+
+// --- Ownership entities (trusts / companies / SMSFs that own property) ---
+export const listEntities = (tenantId: string): Promise<OwnershipEntity[]> => getRepository().list<OwnershipEntity>("entities", tenantId);
+export const getEntity = (tenantId: string, id: string): Promise<OwnershipEntity | null> => getRepository().get<OwnershipEntity>("entities", tenantId, id);
+export const addEntity = (tenantId: string, input: { name: string } & Partial<OwnershipEntity>): Promise<OwnershipEntity> =>
+  getRepository().create<OwnershipEntity>("entities", { ...input, id: uid(), tenantId, createdAt: nowISO() } as OwnershipEntity);
+export const updateEntity = (tenantId: string, id: string, patch: Partial<OwnershipEntity>): Promise<OwnershipEntity | null> =>
+  getRepository().update<OwnershipEntity>("entities", tenantId, id, patch);
+export const removeEntity = (tenantId: string, id: string): Promise<boolean> => getRepository().remove("entities", tenantId, id);
 
 // --- Properties ---
 export const listProperties = (tenantId: string): Promise<Property[]> => getRepository().list<Property>("properties", tenantId);
@@ -58,6 +99,13 @@ export const addReportSnapshot = (
   input: { payload: ReportSnapshot["payload"] } & Partial<ReportSnapshot>,
 ): Promise<ReportSnapshot> =>
   getRepository().create<ReportSnapshot>("report_snapshots", { ...input, id: uid(), tenantId, createdAt: nowISO() } as ReportSnapshot);
+
+// --- Person documents (Legal tab — recorded against a person) ---
+export const listDocuments = (tenantId: string): Promise<PersonDocument[]> =>
+  getRepository().list<PersonDocument>("documents", tenantId);
+export const addDocument = (tenantId: string, input: { name: string } & Partial<PersonDocument>): Promise<PersonDocument> =>
+  getRepository().create<PersonDocument>("documents", { ...input, id: uid(), tenantId, createdAt: nowISO() } as PersonDocument);
+export const removeDocument = (tenantId: string, id: string): Promise<boolean> => getRepository().remove("documents", tenantId, id);
 
 // --- Business documents (business development log) ---
 export const listBusinessDocs = (tenantId: string): Promise<BusinessDocument[]> =>

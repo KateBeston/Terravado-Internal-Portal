@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
 import { listClients } from "@/lib/domain/service";
 import { createClientAction, deleteClientAction } from "@/app/actions";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +36,7 @@ export default async function ClientsPage() {
           <tbody>
             {clients.map((c) => (
               <tr key={c.id}>
-                <td><strong>{c.name}</strong></td>
+                <td><Link href={`/contacts/${c.id}`}><strong>{c.name}</strong></Link></td>
                 <td>{c.email ?? "—"}</td>
                 <td>{c.phone ?? "—"}</td>
                 <td className="muted">{c.notes ?? ""}</td>

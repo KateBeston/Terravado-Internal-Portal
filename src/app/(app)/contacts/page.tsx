@@ -1,7 +1,8 @@
 import { requireUser } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
-import { listContacts } from "@/lib/domain/service";
+import { listContacts, listCompanies } from "@/lib/domain/service";
 import { createContactAction, deleteContactAction } from "@/app/actions";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -10,12 +11,13 @@ const ROLES = ["Mortgage broker", "Buyer's agent", "Accountant", "Solicitor", "C
 export default async function ContactsPage() {
   await requireUser();
   const { tenantId } = await getCurrentTenant();
-  const contacts = await listContacts(tenantId);
+  const [contacts, companies] = await Promise.all([listContacts(tenantId), listCompanies(tenantId)]);
+  const companyName = (id?: string) => (id ? companies.find((co) => co.id === id)?.name ?? "—" : "—");
 
   return (
     <section>
       <h1>Contacts</h1>
-      <p className="sub">Your professional directory — the team around each deal. {contacts.length} on record.</p>
+      <p className="sub">Everyone on file — borrowers/applicants and the professional team around each deal. {contacts.length} on record. Click a name for their full record.</p>
 
       <div className="panel">
         <h2>Add a contact</h2>
@@ -28,12 +30,15 @@ export default async function ContactsPage() {
           </div>
           <div className="row">
             <label className="f"><span>Firm</span><input name="firm" /></label>
-            <label className="f"><span>Licence</span><input name="licence" /></label>
+            <label className="f"><span>Company</span>
+              <select name="companyId" defaultValue=""><option value="">— None —</option>{companies.map((co) => <option key={co.id} value={co.id}>{co.name}</option>)}</select>
+            </label>
           </div>
           <div className="row">
+            <label className="f"><span>Licence</span><input name="licence" /></label>
             <label className="f"><span>Email</span><input name="email" type="email" /></label>
-            <label className="f"><span>Phone</span><input name="phone" /></label>
           </div>
+          <label className="f"><span>Phone</span><input name="phone" /></label>
           <button className="btn" type="submit">Add contact</button>
         </form>
       </div>
@@ -41,13 +46,14 @@ export default async function ContactsPage() {
       <div className="panel">
         <h2>All contacts</h2>
         <table>
-          <thead><tr><th>Name</th><th>Role</th><th>Firm</th><th>Email</th><th>Phone</th><th></th></tr></thead>
+          <thead><tr><th>Name</th><th>Role</th><th>Firm</th><th>Company</th><th>Email</th><th>Phone</th><th></th></tr></thead>
           <tbody>
             {contacts.map((c) => (
               <tr key={c.id}>
-                <td><strong>{c.name}</strong></td>
-                <td><span className="badge">{c.role ?? "—"}</span></td>
+                <td><Link href={`/contacts/${c.id}`}><strong>{c.name}</strong></Link></td>
+                <td>{(c.roles && c.roles.length ? c.roles : (c.role ? [c.role] : [])).map((r) => <span key={r} className="badge" style={{ marginRight: 4 }}>{r}</span>)}{(!c.roles?.length && !c.role) && "—"}</td>
                 <td>{c.firm ?? "—"}</td>
+                <td>{companyName(c.companyId)}</td>
                 <td>{c.email ?? "—"}</td>
                 <td>{c.phone ?? "—"}</td>
                 <td>
@@ -58,7 +64,7 @@ export default async function ContactsPage() {
                 </td>
               </tr>
             ))}
-            {contacts.length === 0 && <tr><td colSpan={6} className="muted">No contacts yet.</td></tr>}
+            {contacts.length === 0 && <tr><td colSpan={7} className="muted">No contacts yet.</td></tr>}
           </tbody>
         </table>
       </div>

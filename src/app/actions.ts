@@ -31,6 +31,14 @@ export async function createClientAction(fd: FormData) {
   await svc.addClient(tenantId, { name, email: s(fd, "email"), phone: s(fd, "phone"), notes: s(fd, "notes") });
   revalidatePath("/clients");
 }
+export async function updateClientDetailsAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id");
+  if (!id) return;
+  await svc.updateClient(tenantId, id, { name: s(fd, "name"), email: s(fd, "email"), phone: s(fd, "phone"), notes: s(fd, "notes") });
+  revalidatePath(`/clients/${id}`); revalidatePath("/clients");
+}
 export async function deleteClientAction(fd: FormData) {
   await requireUser();
   const { tenantId } = await getCurrentTenant();
@@ -112,14 +120,63 @@ export async function createContactAction(fd: FormData) {
   const { tenantId } = await getCurrentTenant();
   const name = s(fd, "name");
   if (!name) return;
-  await svc.addContact(tenantId, { name, role: s(fd, "role"), firm: s(fd, "firm"), email: s(fd, "email"), phone: s(fd, "phone"), licence: s(fd, "licence") });
+  await svc.addContact(tenantId, { name, role: s(fd, "role"), firm: s(fd, "firm"), email: s(fd, "email"), phone: s(fd, "phone"), licence: s(fd, "licence"), companyId: s(fd, "companyId") });
   revalidatePath("/contacts");
+}
+export async function updateContactAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id");
+  if (!id) return;
+  await svc.updateContact(tenantId, id, { name: s(fd, "name"), role: s(fd, "role"), firm: s(fd, "firm"), email: s(fd, "email"), phone: s(fd, "phone"), licence: s(fd, "licence"), companyId: s(fd, "companyId") });
+  revalidatePath(`/contacts/${id}`); revalidatePath("/contacts");
 }
 export async function deleteContactAction(fd: FormData) {
   await requireUser();
   const { tenantId } = await getCurrentTenant();
   const id = s(fd, "id");
   if (id) { await svc.removeContact(tenantId, id); revalidatePath("/contacts"); }
+}
+
+/* The person record's Details tab — core contact fields, roles, and personal
+   detail (stored in the `details` jsonb). One action covers the whole form. */
+export async function updatePersonAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id");
+  if (!id) return;
+  const roles = fd.getAll("roles").map(String).map((r) => r.trim()).filter(Boolean);
+  const details = {
+    firstName: s(fd, "firstName"), lastName: s(fd, "lastName"), dob: s(fd, "dob"),
+    residency: s(fd, "residency"), maritalStatus: s(fd, "maritalStatus"),
+    addressLine: s(fd, "addressLine"), suburb: s(fd, "suburb"), state: s(fd, "state"), postcode: s(fd, "postcode"),
+    preferredContact: s(fd, "preferredContact"), occupation: s(fd, "occupation"),
+    idType: s(fd, "idType"), idNumber: s(fd, "idNumber"),
+  };
+  await svc.updateContact(tenantId, id, {
+    name: s(fd, "name"), email: s(fd, "email"), phone: s(fd, "phone"), notes: s(fd, "notes"),
+    firm: s(fd, "firm"), licence: s(fd, "licence"), companyId: s(fd, "companyId"), roles, details,
+  });
+  revalidatePath(`/contacts/${id}`, "layout");
+  revalidatePath("/contacts"); revalidatePath("/clients");
+}
+
+// --- Person documents (Legal tab) ---
+export async function createDocumentAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const clientId = s(fd, "clientId");
+  const name = s(fd, "name");
+  if (!clientId || !name) return;
+  await svc.addDocument(tenantId, { clientId, name, kind: s(fd, "kind"), storagePath: s(fd, "storagePath") });
+  revalidatePath(`/contacts/${clientId}/legal`);
+}
+export async function deleteDocumentAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id");
+  const clientId = s(fd, "clientId");
+  if (id) { await svc.removeDocument(tenantId, id); if (clientId) revalidatePath(`/contacts/${clientId}/legal`); }
 }
 
 // --- Properties ---
@@ -140,6 +197,15 @@ export async function updatePropertyClientAction(fd: FormData) {
   await svc.updateProperty(tenantId, id, { clientId: s(fd, "clientId") ?? undefined });
   revalidatePath(`/properties/${id}`, "layout");
   revalidatePath("/portfolio");
+}
+export async function updatePropertyCoreAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id");
+  if (!id) return;
+  await svc.updateProperty(tenantId, id, { address: s(fd, "address"), state: s(fd, "state"), price: n(fd, "price"), status: (s(fd, "status") as PropertyStatus) ?? undefined });
+  revalidatePath(`/properties/${id}`, "layout");
+  revalidatePath("/properties");
 }
 export async function deletePropertyAction(fd: FormData) {
   await requireUser();
@@ -410,4 +476,52 @@ export async function deleteLodgementAction(fd: FormData) {
   const { tenantId } = await getCurrentTenant();
   const id = s(fd, "id");
   if (id) { await svc.removeLodgement(tenantId, id); revalidatePath("/lodgements"); }
+}
+
+// --- Companies (network organisations) ---
+export async function createCompanyAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const name = s(fd, "name");
+  if (!name) return;
+  await svc.addCompany(tenantId, { name, kind: s(fd, "kind"), abn: s(fd, "abn"), phone: s(fd, "phone"), email: s(fd, "email"), website: s(fd, "website"), notes: s(fd, "notes") });
+  revalidatePath("/companies");
+}
+export async function updateCompanyAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id");
+  if (!id) return;
+  await svc.updateCompany(tenantId, id, { name: s(fd, "name"), kind: s(fd, "kind"), abn: s(fd, "abn"), phone: s(fd, "phone"), email: s(fd, "email"), website: s(fd, "website"), notes: s(fd, "notes") });
+  revalidatePath(`/companies/${id}`); revalidatePath("/companies");
+}
+export async function deleteCompanyAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id");
+  if (id) { await svc.removeCompany(tenantId, id); revalidatePath("/companies"); }
+}
+
+// --- Ownership entities ---
+export async function createEntityAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const name = s(fd, "name");
+  if (!name) return;
+  await svc.addEntity(tenantId, { name, kind: s(fd, "kind"), region: s(fd, "region"), abn: s(fd, "abn"), clientId: s(fd, "clientId"), notes: s(fd, "notes") });
+  revalidatePath("/entities");
+}
+export async function updateEntityAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id");
+  if (!id) return;
+  await svc.updateEntity(tenantId, id, { name: s(fd, "name"), kind: s(fd, "kind"), region: s(fd, "region"), abn: s(fd, "abn"), clientId: s(fd, "clientId"), notes: s(fd, "notes") });
+  revalidatePath(`/entities/${id}`); revalidatePath("/entities");
+}
+export async function deleteEntityAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id");
+  if (id) { await svc.removeEntity(tenantId, id); revalidatePath("/entities"); }
 }

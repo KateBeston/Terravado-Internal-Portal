@@ -23,13 +23,63 @@ export interface Client extends Entity {
   finances?: ClientFinances;
 }
 
+/* Personal / demographic detail for a person record (the Details tab). The
+   serviceability financials live in `finances`; this is who-they-are. */
+export interface PersonDetails {
+  firstName?: string; lastName?: string;
+  dob?: string;                    // ISO date
+  residency?: string;              // Citizen / Permanent resident / Visa
+  maritalStatus?: string;          // Single / Married / De facto / ...
+  addressLine?: string; suburb?: string; state?: string; postcode?: string;
+  preferredContact?: string;       // Email / Phone / SMS
+  occupation?: string;             // headline occupation (detail; employment sits in finances)
+  idType?: string; idNumber?: string;  // e.g. Driver licence / Passport
+}
+
+/* The unified person record (since 0011). `roles` says what this person is —
+   Borrower/applicant, Broker, Buyer's agent, Accountant, Solicitor, etc. — and
+   drives which tabs the record shows. A person with the Borrower role is a
+   "client" to the Modeller and carries `finances`. */
+export const PERSON_ROLES = [
+  "Borrower", "Mortgage broker", "Buyer's agent", "Accountant", "Solicitor",
+  "Conveyancer", "Valuer", "Quantity surveyor", "Property manager", "Builder", "Referral partner", "Other",
+] as const;
+
 export interface Contact extends Entity {
   name: string;
-  role?: string;
+  roles?: string[];
+  role?: string;      // legacy single-role label (kept for existing data / display)
   firm?: string;
   email?: string;
   phone?: string;
   licence?: string;
+  companyId?: string;
+  notes?: string;
+  finances?: ClientFinances;
+  details?: PersonDetails;
+}
+
+/* A company / organisation in the adviser's network — agency, lender,
+   conveyancer, accountant, developer, referral partner. Contacts link to one. */
+export interface Company extends Entity {
+  name: string;
+  kind?: string;
+  abn?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  notes?: string;
+}
+
+/* A client ownership entity — the trust/company/SMSF that holds the property
+   for tax and structuring (used by land-tax aggregation). */
+export interface OwnershipEntity extends Entity {
+  clientId?: string;
+  name: string;
+  kind?: string;   // Individual / Company / Trust / SMSF / Partnership
+  region?: string; // state of the entity
+  abn?: string;
+  notes?: string;
 }
 
 /* The full property record behind the tabbed detail view. Each sub-object is a
@@ -153,6 +203,15 @@ export interface Lodgement extends Entity {
   payload: Record<string, any>;
   notes?: string;
   updatedAt?: string;
+}
+
+/* A document recorded against a person (the Legal tab). `storagePath` holds a
+   link or location string for now; file upload to Supabase Storage comes later. */
+export interface PersonDocument extends Entity {
+  clientId?: string;
+  name: string;
+  kind?: string;
+  storagePath?: string;
 }
 
 export type BusinessDocStatus = "active" | "draft" | "archived";
