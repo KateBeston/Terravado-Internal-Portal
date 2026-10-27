@@ -3,6 +3,7 @@ import { getCurrentTenant } from "@/lib/auth/tenant";
 import { listClients, getClient, listReportSnapshots, listProperties, getProperty, listLenders } from "@/lib/domain/service";
 import { saveClientFinancesAction, saveRunAction } from "@/app/actions";
 import { runModel, runScenarios, runStressTest, runLenderCompare, type ModelInputs } from "@/lib/modelling/run";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -190,6 +191,12 @@ export default async function ModellerPage({ searchParams }: { searchParams: Rec
             </div>
             <span className="muted" style={{ fontSize: 11 }}>Both save the figures currently shown — run first to apply any changes.</span>
           </>
+        )}
+        {client && selProp && (
+          <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--line)" }}>
+            <Link className="btn" href={`/deal/${client.id}/${selProp.id}`}>Export deal →</Link>
+            <span className="muted" style={{ fontSize: 11, marginLeft: 10 }}>Application-ready deal pack for {client.name} · {selProp.address}.</span>
+          </div>
         )}
       </div>
 
