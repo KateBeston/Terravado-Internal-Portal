@@ -9,7 +9,6 @@ const LINKS: [string, string][] = [
   ["/lenders", "Lenders"],
   ["/portfolio", "Portfolio"],
   ["/contacts", "Contacts"],
-  ["/companies", "Companies"],
   ["/entities", "Entities"],
   ["/properties", "Properties"],
   ["/finance", "Finance"],

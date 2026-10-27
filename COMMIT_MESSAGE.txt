@@ -1,28 +1,31 @@
-feat(financials): full serviceability record — employment, income by type, assets, liabilities
+feat(entities): unify companies + entities into one typed record with person<->entity role memberships
 
 INTERNAL PORTAL.
 
-The Financials tab on the person record is now the full serviceability record,
-with four detailed sections plus the assessment summary:
+Companies and ownership entities are now one record (as "a company is an
+entity"). The unified Entities directory holds every company, trust, SMSF or
+partnership that holds property AND every network org — agency, lender,
+conveyancer, accountant, developer — each with a type, ABN, state and contact
+details.
 
-- Employment — employer, status (full-time/part-time/casual/contract/self-
-  employed/retired/not employed), PAYG vs self-employed basis, occupation,
-  industry, start date (time-in-role derived), current-role and on-probation
-  flags. Multiple/previous employers supported.
-- Income — one line per source, typed for serviceability: PAYG base/overtime/
-  bonus/commission/allowances, self-employed (sole trader/company/trust) with
-  prior-year figure + add-backs, rental, government/age pension, super/retiree
-  drawdown, investment/dividends, maintenance, other. Owner (applicant/partner/
-  joint), amount + frequency, annualised automatically.
-- Assets — property, savings, super, vehicle, shares, business, other.
-- Liabilities — home/investment loan, card, personal/car loan, HECS-HELP,
-  BNPL, other, with limit, balance, repayment + frequency.
-- Summary cards (income p.a., assets, liabilities, monthly repayments) and the
-  assessment summary the Modeller reads today.
+Entity record is tabbed (same chrome as the person/property records):
+- Details      — name, type, state, ABN, phone/email/website, primary client.
+- People & roles — who is linked and in what role (director, trustee,
+  beneficiary, member, signatory...), with primary/can-sign flags.
+- Properties   — properties attributed to this entity.
 
-All stored in the contacts.finances jsonb (no migration). Finances writes now
-read-merge-write so the structured lists and the summary never clobber each
-other. The engine will consume the detailed lines directly as the next step.
+Person <-> entity memberships: a new entity_members join carries the role, so a
+person can be director of one entity and trustee of another. The person record's
+Entities tab shows and manages their memberships.
+
+Property ownership can now be attributed to an entity (owning trust/SMSF/company
+selector on the property Overview); the entity's Properties tab lists them.
+
+Migration 0012 (applied): widens entities.kind to free text, adds phone/email/
+website; folds companies into entities preserving ids (so contacts.company_id
+resolves); drops the companies FK; creates entity_members (+RLS, indexes). The
+companies table is left dormant. /companies and /companies/[id] redirect to the
+entity record; Companies is removed from the nav.
 
 Verified: tsc --noEmit clean · verify:engine 20/20 · next build green.
 

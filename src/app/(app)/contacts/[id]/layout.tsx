@@ -28,7 +28,7 @@ export default async function ContactRecordLayout({ children, params }: { childr
       { slug: "modelling", label: "Modelling" },
     ] : []),
     { slug: "legal", label: "Legal" },
-    { slug: "company", label: "Company" },
+    { slug: "company", label: "Entities" },
   ];
 
   const roleLabels = roles.length ? roles : (c.role ? [c.role] : []);

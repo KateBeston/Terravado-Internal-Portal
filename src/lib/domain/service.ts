@@ -2,7 +2,7 @@
    layer above the repository. UI and server actions call these, never the
    repository directly. */
 import { getRepository } from "@/lib/data";
-import type { BusinessDocument, Client, Company, Contact, Lender, Lodgement, OwnershipEntity, PersonDocument, Property, ReportSnapshot } from "./types";
+import type { BusinessDocument, Client, Company, Contact, EntityMember, Lender, Lodgement, OwnershipEntity, PersonDocument, Property, ReportSnapshot } from "./types";
 
 const uid = (): string =>
   globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : `id-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -46,16 +46,28 @@ export const updateContact = (tenantId: string, id: string, patch: Partial<Conta
   getRepository().update<Contact>("contacts", tenantId, id, patch);
 export const removeContact = (tenantId: string, id: string): Promise<boolean> => getRepository().remove("contacts", tenantId, id);
 
-// --- Companies (network organisations) ---
-export const listCompanies = (tenantId: string): Promise<Company[]> => getRepository().list<Company>("companies", tenantId);
-export const getCompany = (tenantId: string, id: string): Promise<Company | null> => getRepository().get<Company>("companies", tenantId, id);
+/* --- Companies -----------------------------------------------------------
+   Unified since 0012: companies and ownership entities are one record, in the
+   `entities` collection. These aliases keep the "company" callers (the person
+   record's company selector, etc.) resolving against the unified record. */
+export const listCompanies = (tenantId: string): Promise<Company[]> =>
+  getRepository().list<Company>("entities", tenantId);
+export const getCompany = (tenantId: string, id: string): Promise<Company | null> =>
+  getRepository().get<Company>("entities", tenantId, id);
 export const addCompany = (tenantId: string, input: { name: string } & Partial<Company>): Promise<Company> =>
-  getRepository().create<Company>("companies", { ...input, id: uid(), tenantId, createdAt: nowISO() } as Company);
+  getRepository().create<Company>("entities", { ...input, id: uid(), tenantId, createdAt: nowISO() } as Company);
 export const updateCompany = (tenantId: string, id: string, patch: Partial<Company>): Promise<Company | null> =>
-  getRepository().update<Company>("companies", tenantId, id, patch);
-export const removeCompany = (tenantId: string, id: string): Promise<boolean> => getRepository().remove("companies", tenantId, id);
+  getRepository().update<Company>("entities", tenantId, id, patch);
+export const removeCompany = (tenantId: string, id: string): Promise<boolean> => getRepository().remove("entities", tenantId, id);
 
-// --- Ownership entities (trusts / companies / SMSFs that own property) ---
+// --- Entity memberships (person <-> entity, each with a role) ---
+export const listMembers = (tenantId: string): Promise<EntityMember[]> =>
+  getRepository().list<EntityMember>("entity_members", tenantId);
+export const addMember = (tenantId: string, input: Partial<EntityMember>): Promise<EntityMember> =>
+  getRepository().create<EntityMember>("entity_members", { ...input, id: uid(), tenantId, createdAt: nowISO() } as EntityMember);
+export const removeMember = (tenantId: string, id: string): Promise<boolean> => getRepository().remove("entity_members", tenantId, id);
+
+// --- Ownership entities (the unified entity/company record) ---
 export const listEntities = (tenantId: string): Promise<OwnershipEntity[]> => getRepository().list<OwnershipEntity>("entities", tenantId);
 export const getEntity = (tenantId: string, id: string): Promise<OwnershipEntity | null> => getRepository().get<OwnershipEntity>("entities", tenantId, id);
 export const addEntity = (tenantId: string, input: { name: string } & Partial<OwnershipEntity>): Promise<OwnershipEntity> =>

@@ -140,16 +140,45 @@ export interface Company extends Entity {
   notes?: string;
 }
 
-/* A client ownership entity — the trust/company/SMSF that holds the property
-   for tax and structuring (used by land-tax aggregation). */
+/* The unified entity/company record (since 0012). One record for every
+   organisation or structure: a company, trust, SMSF or partnership that holds
+   property, or a network org — agency, lender, conveyancer, accountant,
+   developer. `kind` is the type; people link to it through EntityMember with a
+   role, and a property's ownership can be attributed to it (properties.entityId). */
 export interface OwnershipEntity extends Entity {
-  clientId?: string;
+  clientId?: string;   // optional primary client association
   name: string;
-  kind?: string;   // Individual / Company / Trust / SMSF / Partnership
-  region?: string; // state of the entity
+  kind?: string;       // see ENTITY_TYPES
+  region?: string;     // state of the entity
   abn?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
   notes?: string;
 }
+
+/* A person's membership of an entity, carrying their role (director, trustee,
+   beneficiary, member, client-of...). The person<->entity many-to-many. */
+export interface EntityMember extends Entity {
+  entityId?: string;
+  contactId?: string;
+  role?: string;
+  isPrimary?: boolean;
+  maySign?: boolean;
+  startedAt?: string;
+  endedAt?: string;
+  notes?: string;
+}
+
+export const ENTITY_TYPES = [
+  "Individual", "Joint", "Company", "Trust", "SMSF", "Partnership",
+  "Agency", "Lender", "Conveyancer", "Accountant", "Developer", "Referral partner", "Buyers agent", "Other",
+] as const;
+
+export const MEMBER_ROLES = [
+  "Director", "Secretary", "Shareholder", "Trustee", "Beneficiary", "Appointor",
+  "Member", "Partner", "Public officer", "Signatory", "Client", "Accountant", "Solicitor", "Other",
+] as const;
 
 /* The full property record behind the tabbed detail view. Each sub-object is a
    tab; integrations (VG / ABS / Geoscape / CoreLogic / Domain) populate the
@@ -210,6 +239,7 @@ export interface Property extends Entity {
   price?: number;
   status?: PropertyStatus;
   clientId?: string;
+  entityId?: string;   // ownership attributed to an entity (trust/SMSF/company)
   details?: PropertyDetails;
 }
 

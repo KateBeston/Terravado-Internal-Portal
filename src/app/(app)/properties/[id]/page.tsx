@@ -1,20 +1,24 @@
 import { requireUser } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
-import { getProperty, listClients } from "@/lib/domain/service";
-import { updatePropertyClientAction } from "@/app/actions";
+import { getProperty, listClients, listEntities } from "@/lib/domain/service";
+import { updatePropertyClientAction, updatePropertyCoreAction } from "@/app/actions";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 const money = (v?: number | null) => (v === undefined || v === null ? "—" : "$" + Math.round(v).toLocaleString("en-AU"));
+const STATES = ["NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"];
+const STATUSES: { v: string; label: string }[] = [
+  { v: "considering", label: "Considering" }, { v: "owned", label: "Owned" }, { v: "sold", label: "Sold" },
+];
 
 export default async function PropertyOverview({ params }: { params: { id: string } }) {
   await requireUser();
   const { tenantId } = await getCurrentTenant();
   const p = await getProperty(tenantId, params.id);
   if (!p) notFound();
-  const clients = await listClients(tenantId);
+  const [clients, entities] = await Promise.all([listClients(tenantId), listEntities(tenantId)]);
 
   const d = p.details ?? {};
   const t = d.title ?? {}; const l = d.locality ?? {}; const ph = d.physical ?? {};
@@ -28,6 +32,30 @@ export default async function PropertyOverview({ params }: { params: { id: strin
         <div className="card"><div className="k">Land size</div><div className="v">{ph.landSize ? `${ph.landSize} m²` : "—"}</div></div>
         <div className="card"><div className="k">Suburb median</div><div className="v">{money(l.suburbMedian)}</div></div>
         <div className="card"><div className="k">Last sale</div><div className="v">{lastSale ? money(lastSale.price) : "—"}</div></div>
+      </div>
+
+      <div className="panel">
+        <h2>Property details</h2>
+        <form action={updatePropertyCoreAction}>
+          <input type="hidden" name="id" value={p.id} />
+          <label className="f"><span>Address</span><input name="address" defaultValue={p.address ?? ""} required /></label>
+          <div className="row">
+            <label className="f"><span>State</span>
+              <select name="state" defaultValue={p.state ?? "NSW"}>{STATES.map((s) => <option key={s}>{s}</option>)}</select>
+            </label>
+            <label className="f"><span>Price</span><input name="price" type="number" step="1000" defaultValue={p.price ?? ""} /></label>
+            <label className="f"><span>Status</span>
+              <select name="status" defaultValue={p.status ?? "considering"}>{STATUSES.map((s) => <option key={s.v} value={s.v}>{s.label}</option>)}</select>
+            </label>
+          </div>
+          <label className="f"><span>Owning entity (trust / SMSF / company)</span>
+            <select name="entityId" defaultValue={p.entityId ?? ""}>
+              <option value="">— None (held personally) —</option>
+              {entities.map((e) => <option key={e.id} value={e.id}>{e.name}{e.kind ? ` (${e.kind})` : ""}</option>)}
+            </select>
+          </label>
+          <button className="btn" type="submit">Save details</button>
+        </form>
       </div>
 
       <div className="panel">

@@ -281,7 +281,10 @@ export async function updatePropertyCoreAction(fd: FormData) {
   const { tenantId } = await getCurrentTenant();
   const id = s(fd, "id");
   if (!id) return;
-  await svc.updateProperty(tenantId, id, { address: s(fd, "address"), state: s(fd, "state"), price: n(fd, "price"), status: (s(fd, "status") as PropertyStatus) ?? undefined });
+  await svc.updateProperty(tenantId, id, {
+    address: s(fd, "address"), state: s(fd, "state"), price: n(fd, "price"),
+    status: (s(fd, "status") as PropertyStatus) ?? undefined, entityId: s(fd, "entityId") ?? undefined,
+  });
   revalidatePath(`/properties/${id}`, "layout");
   revalidatePath("/properties");
 }
@@ -586,7 +589,7 @@ export async function createEntityAction(fd: FormData) {
   const { tenantId } = await getCurrentTenant();
   const name = s(fd, "name");
   if (!name) return;
-  await svc.addEntity(tenantId, { name, kind: s(fd, "kind"), region: s(fd, "region"), abn: s(fd, "abn"), clientId: s(fd, "clientId"), notes: s(fd, "notes") });
+  await svc.addEntity(tenantId, { name, kind: s(fd, "kind"), region: s(fd, "region"), abn: s(fd, "abn"), phone: s(fd, "phone"), email: s(fd, "email"), website: s(fd, "website"), clientId: s(fd, "clientId"), notes: s(fd, "notes") });
   revalidatePath("/entities");
 }
 export async function updateEntityAction(fd: FormData) {
@@ -594,12 +597,39 @@ export async function updateEntityAction(fd: FormData) {
   const { tenantId } = await getCurrentTenant();
   const id = s(fd, "id");
   if (!id) return;
-  await svc.updateEntity(tenantId, id, { name: s(fd, "name"), kind: s(fd, "kind"), region: s(fd, "region"), abn: s(fd, "abn"), clientId: s(fd, "clientId"), notes: s(fd, "notes") });
-  revalidatePath(`/entities/${id}`); revalidatePath("/entities");
+  await svc.updateEntity(tenantId, id, { name: s(fd, "name"), kind: s(fd, "kind"), region: s(fd, "region"), abn: s(fd, "abn"), phone: s(fd, "phone"), email: s(fd, "email"), website: s(fd, "website"), clientId: s(fd, "clientId"), notes: s(fd, "notes") });
+  revalidatePath(`/entities/${id}`, "layout"); revalidatePath("/entities");
 }
 export async function deleteEntityAction(fd: FormData) {
   await requireUser();
   const { tenantId } = await getCurrentTenant();
   const id = s(fd, "id");
   if (id) { await svc.removeEntity(tenantId, id); revalidatePath("/entities"); }
+}
+
+// --- Entity memberships (person <-> entity, with a role) ---
+export async function addMemberAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const entityId = s(fd, "entityId");
+  const contactId = s(fd, "contactId");
+  if (!entityId || !contactId) return;
+  await svc.addMember(tenantId, {
+    entityId, contactId, role: s(fd, "role"),
+    isPrimary: s(fd, "isPrimary") === "on", maySign: s(fd, "maySign") === "on", notes: s(fd, "notes"),
+  });
+  revalidatePath(`/entities/${entityId}/people`);
+  if (contactId) revalidatePath(`/contacts/${contactId}/company`);
+}
+export async function deleteMemberAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id");
+  const entityId = s(fd, "entityId");
+  const contactId = s(fd, "contactId");
+  if (id) {
+    await svc.removeMember(tenantId, id);
+    if (entityId) revalidatePath(`/entities/${entityId}/people`);
+    if (contactId) revalidatePath(`/contacts/${contactId}/company`);
+  }
 }
