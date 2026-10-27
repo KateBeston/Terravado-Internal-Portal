@@ -11,6 +11,7 @@ const LINKS: [string, string][] = [
   ["/contacts", "Contacts"],
   ["/properties", "Properties"],
   ["/finance", "Finance"],
+  ["/lodgements", "Lodgements"],
   ["/business", "The Business"],
 ];
 

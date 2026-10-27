@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
 import { getClient, getProperty, listLenders } from "@/lib/domain/service";
 import { assembleDealPack } from "@/lib/deal/pack";
+import { lodgeDealAction } from "@/app/actions";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -110,6 +111,19 @@ export default async function DealPackPage({ params }: { params: { clientId: str
           <summary style={{ cursor: "pointer", color: "var(--muted)", fontSize: 13 }}>View structured data</summary>
           <pre style={{ whiteSpace: "pre-wrap", fontSize: 11, lineHeight: 1.5, marginTop: 10, overflowX: "auto" }}>{JSON.stringify(pack, null, 2)}</pre>
         </details>
+      </div>
+
+      <div className="panel">
+        <h2>Lodge &amp; track</h2>
+        <p className="muted" style={{ marginTop: -4 }}>
+          Prepare this deal for lodgement and add it to the pipeline. It&apos;s prepared via export handoff — the broker lodges through their
+          own aggregator channel — and you track its status on the Lodgements page. A direct Simpology/NextGen connection switches on later.
+        </p>
+        <form action={lodgeDealAction}>
+          <input type="hidden" name="clientId" value={client.id} />
+          <input type="hidden" name="propertyId" value={property.id} />
+          <button className="btn" type="submit">Lodge / track this deal</button>
+        </form>
       </div>
 
       <div className="muted" style={{ fontSize: 12 }}>{pack.meta.disclaimer} · {pack.meta.lixiMapping} · engine {pack.meta.engineVersion}</div>

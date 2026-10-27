@@ -140,6 +140,21 @@ export interface Lender extends Entity {
   policy?: LenderPolicy;
 }
 
+export type LodgementStatus = "prepared" | "submitted" | "conditional" | "approved" | "settled" | "declined" | "withdrawn";
+
+/* A prepared deal handed toward the lending channel, with a status pipeline the
+   broker/adviser tracks. `payload` is the deal-pack snapshot. */
+export interface Lodgement extends Entity {
+  clientId?: string;
+  propertyId?: string;
+  status: LodgementStatus;
+  channel?: string;
+  reference?: string;
+  payload: Record<string, any>;
+  notes?: string;
+  updatedAt?: string;
+}
+
 export type BusinessDocStatus = "active" | "draft" | "archived";
 
 export interface BusinessDocument extends Entity {

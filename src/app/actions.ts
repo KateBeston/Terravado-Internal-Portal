@@ -6,6 +6,9 @@ import * as svc from "@/lib/domain/service";
 import type { BusinessDocStatus, PropertyStatus } from "@/lib/domain/types";
 import { runModel, runStressTest, type ModelInputs } from "@/lib/modelling/run";
 import { getPropertyDataProvider } from "@/lib/integrations/property-data";
+import { assembleDealPack } from "@/lib/deal/pack";
+import { getLodgementProvider } from "@/lib/integrations/lodgement";
+import type { LodgementStatus } from "@/lib/domain/types";
 
 const s = (fd: FormData, k: string): string | undefined => {
   const v = fd.get(k);
@@ -357,4 +360,44 @@ export async function deleteLenderAction(fd: FormData) {
   const { tenantId } = await getCurrentTenant();
   const id = s(fd, "id");
   if (id) { await svc.removeLender(tenantId, id); revalidatePath("/lenders"); }
+}
+
+// --- Lodgements (deal tracking) ---
+export async function lodgeDealAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const clientId = s(fd, "clientId");
+  const propertyId = s(fd, "propertyId");
+  if (!clientId || !propertyId) return;
+  const [client, property] = await Promise.all([svc.getClient(tenantId, clientId), svc.getProperty(tenantId, propertyId)]);
+  if (!client || !property) return;
+  const engineLenders = (await svc.listLenders(tenantId))
+    .filter((l) => l.active !== false)
+    .map((l) => ({ id: l.id, name: l.name, isTemplate: false, ...(l.policy ?? {}) }));
+  const pack = assembleDealPack(client, property, engineLenders);
+  const submission = await getLodgementProvider().submit(pack);
+  await svc.addLodgement(tenantId, {
+    clientId, propertyId,
+    status: submission.status as LodgementStatus,
+    channel: submission.channel,
+    reference: submission.reference,
+    payload: pack as unknown as Record<string, any>,
+    notes: submission.validation.ok ? undefined : `Validation: ${submission.validation.issues.join("; ")}`,
+  });
+  revalidatePath("/lodgements");
+}
+export async function updateLodgementStatusAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id");
+  const status = s(fd, "status") as LodgementStatus | undefined;
+  if (!id || !status) return;
+  await svc.updateLodgement(tenantId, id, { status, updatedAt: new Date().toISOString() });
+  revalidatePath("/lodgements");
+}
+export async function deleteLodgementAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id");
+  if (id) { await svc.removeLodgement(tenantId, id); revalidatePath("/lodgements"); }
 }

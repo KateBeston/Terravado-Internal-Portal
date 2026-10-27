@@ -2,7 +2,7 @@
    layer above the repository. UI and server actions call these, never the
    repository directly. */
 import { getRepository } from "@/lib/data";
-import type { BusinessDocument, Client, Contact, Lender, Property, ReportSnapshot } from "./types";
+import type { BusinessDocument, Client, Contact, Lender, Lodgement, Property, ReportSnapshot } from "./types";
 
 const uid = (): string =>
   globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : `id-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -40,6 +40,15 @@ export const addLender = (tenantId: string, input: { name: string } & Partial<Le
 export const updateLender = (tenantId: string, id: string, patch: Partial<Lender>): Promise<Lender | null> =>
   getRepository().update<Lender>("lenders", tenantId, id, patch);
 export const removeLender = (tenantId: string, id: string): Promise<boolean> => getRepository().remove("lenders", tenantId, id);
+
+// --- Lodgements (deal tracking) ---
+export const listLodgements = (tenantId: string): Promise<Lodgement[]> => getRepository().list<Lodgement>("lodgements", tenantId);
+export const getLodgement = (tenantId: string, id: string): Promise<Lodgement | null> => getRepository().get<Lodgement>("lodgements", tenantId, id);
+export const addLodgement = (tenantId: string, input: { payload: Record<string, any>; status: Lodgement["status"] } & Partial<Lodgement>): Promise<Lodgement> =>
+  getRepository().create<Lodgement>("lodgements", { ...input, id: uid(), tenantId, createdAt: nowISO() } as Lodgement);
+export const updateLodgement = (tenantId: string, id: string, patch: Partial<Lodgement>): Promise<Lodgement | null> =>
+  getRepository().update<Lodgement>("lodgements", tenantId, id, patch);
+export const removeLodgement = (tenantId: string, id: string): Promise<boolean> => getRepository().remove("lodgements", tenantId, id);
 
 // --- Report snapshots (saved modelling runs on a client's file; append-only) ---
 export const listReportSnapshots = (tenantId: string): Promise<ReportSnapshot[]> =>
