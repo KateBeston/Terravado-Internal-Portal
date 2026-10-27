@@ -95,6 +95,14 @@ td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: middle
 .hr { height: 1px; background: var(--line); margin: 18px 0; }
 .muted { color: var(--muted); font-size: 13px; }
 
+/* ---- Rectangular UI — no rounded corners anywhere ---- */
+:root { --radius: 0px; }
+.nav a.link, .nav button.signout, .card, .panel,
+input, select, textarea, button, .btn, .x, .badge,
+.devbanner, .login, .gbtn, table, th, td, img { border-radius: 0; }
+.who-link { color: var(--nav-text); font-weight: 600; text-decoration: none; }
+.who-link:hover { text-decoration: underline; }
+
 @media (max-width: 720px) {
   .shell { grid-template-columns: 1fr; }
   .nav { position: static; height: auto; }

@@ -2,11 +2,10 @@ import { requireUser } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
 import { listContacts, listCompanies } from "@/lib/domain/service";
 import { createContactAction, deleteContactAction } from "@/app/actions";
+import { PERSON_ROLES } from "@/lib/domain/types";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
-
-const ROLES = ["Mortgage broker", "Buyer's agent", "Accountant", "Solicitor", "Conveyancer", "Valuer", "Quantity surveyor", "Property manager", "Builder", "Other"];
 
 export default async function ContactsPage() {
   await requireUser();
@@ -22,11 +21,14 @@ export default async function ContactsPage() {
       <div className="panel">
         <h2>Add a contact</h2>
         <form action={createContactAction}>
-          <div className="row">
-            <label className="f"><span>Name</span><input name="name" required /></label>
-            <label className="f"><span>Role</span>
-              <select name="role" defaultValue="Mortgage broker">{ROLES.map((r) => <option key={r}>{r}</option>)}</select>
-            </label>
+          <label className="f"><span>Name</span><input name="name" required /></label>
+          <label className="f"><span>Roles</span></label>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 18px", marginBottom: 14 }}>
+            {PERSON_ROLES.map((r) => (
+              <label key={r} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, margin: 0 }}>
+                <input type="checkbox" name="roles" value={r} style={{ width: "auto", margin: 0 }} /> {r}
+              </label>
+            ))}
           </div>
           <div className="row">
             <label className="f"><span>Firm</span><input name="firm" /></label>
@@ -41,6 +43,7 @@ export default async function ContactsPage() {
           <label className="f"><span>Phone</span><input name="phone" /></label>
           <button className="btn" type="submit">Add contact</button>
         </form>
+        <p className="muted" style={{ fontSize: 12 }}>Tick <strong>Borrower</strong> for someone you&apos;ll model/assess — they then get the Financials, Properties and Modelling tabs.</p>
       </div>
 
       <div className="panel">

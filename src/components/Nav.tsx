@@ -7,9 +7,10 @@ const LINKS: [string, string][] = [
   ["/modeller", "Modeller"],
   ["/workspace", "Workspace"],
   ["/lenders", "Lenders"],
-  ["/clients", "Clients"],
   ["/portfolio", "Portfolio"],
   ["/contacts", "Contacts"],
+  ["/companies", "Companies"],
+  ["/entities", "Entities"],
   ["/properties", "Properties"],
   ["/finance", "Finance"],
   ["/lodgements", "Lodgements"],
@@ -19,7 +20,7 @@ const LINKS: [string, string][] = [
 
 interface NavUser { name: string; email: string; isDev: boolean; }
 
-export default function Nav({ user, engineVersion, taxVersion }: { user: NavUser | null; engineVersion: string; taxVersion: string; }) {
+export default function Nav({ user, recordId, engineVersion, taxVersion }: { user: NavUser | null; recordId?: string | null; engineVersion: string; taxVersion: string; }) {
   const path = usePathname();
   const active = (href: string) => (href === "/" ? path === "/" : path.startsWith(href));
   return (
@@ -36,7 +37,7 @@ export default function Nav({ user, engineVersion, taxVersion }: { user: NavUser
       <div className="spacer" />
       {user && (
         <div className="who">
-          {user.name}
+          <Link href={recordId ? `/contacts/${recordId}` : "/contacts"} className="who-link">{user.name}</Link>
           <br />
           {user.email}
           {user.isDev && <> · <span style={{ color: "#e0b050" }}>dev mode</span></>}

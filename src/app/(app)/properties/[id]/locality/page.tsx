@@ -25,9 +25,9 @@ export default async function PropertyLocalityTab({ params }: { params: { id: st
           <>
             <div className="split" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={sat} alt={`Satellite view of ${p.address}`} style={{ width: "100%", borderRadius: 8, border: "1px solid var(--line)" }} />
+              <img src={sat} alt={`Satellite view of ${p.address}`} style={{ width: "100%", borderRadius: 0, border: "1px solid var(--line)" }} />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              {street && <img src={street} alt={`Street view of ${p.address}`} style={{ width: "100%", borderRadius: 8, border: "1px solid var(--line)" }} />}
+              {street && <img src={street} alt={`Street view of ${p.address}`} style={{ width: "100%", borderRadius: 0, border: "1px solid var(--line)" }} />}
             </div>
             <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>
               Satellite &amp; street view via Google Maps. <a href={mapsLinkUrl(p.address)} target="_blank" rel="noreferrer">Open in Google Maps ↗</a>

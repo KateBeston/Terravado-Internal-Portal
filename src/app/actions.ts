@@ -120,7 +120,8 @@ export async function createContactAction(fd: FormData) {
   const { tenantId } = await getCurrentTenant();
   const name = s(fd, "name");
   if (!name) return;
-  await svc.addContact(tenantId, { name, role: s(fd, "role"), firm: s(fd, "firm"), email: s(fd, "email"), phone: s(fd, "phone"), licence: s(fd, "licence"), companyId: s(fd, "companyId") });
+  const roles = fd.getAll("roles").map(String).map((r) => r.trim()).filter(Boolean);
+  await svc.addContact(tenantId, { name, roles, firm: s(fd, "firm"), email: s(fd, "email"), phone: s(fd, "phone"), licence: s(fd, "licence"), companyId: s(fd, "companyId") });
   revalidatePath("/contacts");
 }
 export async function updateContactAction(fd: FormData) {
