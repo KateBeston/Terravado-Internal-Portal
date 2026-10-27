@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
-import { listClients, getClient, listReportSnapshots } from "@/lib/domain/service";
+import { listClients, getClient, listReportSnapshots, listProperties, getProperty } from "@/lib/domain/service";
 import { saveClientFinancesAction, saveRunAction } from "@/app/actions";
 import { runModel, runScenarios, runStressTest, type ModelInputs } from "@/lib/modelling/run";
 
@@ -25,19 +25,26 @@ export default async function ModellerPage({ searchParams }: { searchParams: Rec
   await requireUser();
   const { tenantId } = await getCurrentTenant();
   const clients = await listClients(tenantId);
+  const properties = await listProperties(tenantId);
 
   // Selected client (if any) and their stored financial position.
   const clientId = asStr(searchParams.clientId, "");
   const client = clientId ? (clients.find((c) => c.id === clientId) ?? (await getClient(tenantId, clientId))) : null;
   const fin = client?.finances ?? {};
 
-  // Property inputs — unchanged, and shared by the generic and client runs.
+  // Selected property (if any) and its stored record / deep financials.
+  const propertyId = asStr(searchParams.propertyId, "");
+  const selProp = propertyId ? (properties.find((p) => p.id === propertyId) ?? (await getProperty(tenantId, propertyId))) : null;
+  const pd = selProp?.details ?? {};
+
+  // Property inputs — prefill from the selected property when present, else the
+  // sample defaults; an explicit URL value always wins.
   const property = {
-    address: asStr(searchParams.address, "22 Example St, Ashfield NSW 2131"),
-    state: asStr(searchParams.state, "NSW"),
-    price: numParam(searchParams.price, 1100000),
-    weeklyRent: numParam(searchParams.weeklyRent, 720),
-    growthPct: numParam(searchParams.growthPct, 5.5),
+    address: asStr(searchParams.address, selProp?.address ?? "22 Example St, Ashfield NSW 2131"),
+    state: asStr(searchParams.state, selProp?.state ?? "NSW"),
+    price: numParam(searchParams.price, selProp?.price ?? 1100000),
+    weeklyRent: numParam(searchParams.weeklyRent, pd.weeklyRent ?? 720),
+    growthPct: numParam(searchParams.growthPct, pd.locality?.annualGrowthPct ?? 5.5),
     ratePct: numParam(searchParams.ratePct, 6.1),
     depositPct: numParam(searchParams.depositPct, 20),
   };
@@ -61,6 +68,7 @@ export default async function ModellerPage({ searchParams }: { searchParams: Rec
   const inputs: ModelInputs = {
     ...property,
     grossIncome,
+    ...(selProp ? { modelling: pd.modelling } : {}),
     ...(client ? { clientName: client.name, ...pos } : {}),
   };
 
@@ -76,6 +84,7 @@ export default async function ModellerPage({ searchParams }: { searchParams: Rec
   // is currently on screen (run first to apply any URL changes).
   const runFields: [string, string][] = client && pos ? [
     ["clientId", client.id],
+    ["propertyId", selProp?.id ?? ""],
     ["address", inputs.address ?? ""],
     ["state", inputs.state],
     ["price", String(inputs.price)],
@@ -110,7 +119,19 @@ export default async function ModellerPage({ searchParams }: { searchParams: Rec
             ? <p className="muted" style={{ fontSize: 12, marginTop: -4, marginBottom: 14 }}>Serviceability is assessed against <strong>{client.name}</strong>&apos;s position below. Change a figure and run; use “Save to client” to store it on their file.</p>
             : <p className="muted" style={{ fontSize: 12, marginTop: -4, marginBottom: 14 }}>Pick a client to model this property against their real serviceability, or leave generic.</p>}
 
-          <label className="f"><span>Property</span><input name="address" defaultValue={inputs.address} /></label>
+          <label className="f"><span>Property record</span>
+            <select name="propertyId" defaultValue={propertyId}>
+              <option value="">— None (ad-hoc entry) —</option>
+              {properties.map((p) => <option key={p.id} value={p.id}>{p.address}</option>)}
+            </select>
+          </label>
+          {selProp && (
+            <p className="muted" style={{ fontSize: 12, marginTop: -4, marginBottom: 14 }}>
+              Modelling <strong>{selProp.address}</strong> with its saved record{pd.modelling ? " and deep financials (expenses, loan structure, depreciation, capex)" : " — add deep financials on its Financials tab for a full-depth run"}.
+            </p>
+          )}
+
+          <label className="f"><span>Property address</span><input name="address" defaultValue={inputs.address} /></label>
           <div className="row">
             <label className="f"><span>Purchase price</span><input name="price" inputMode="numeric" defaultValue={String(inputs.price)} /></label>
             <label className="f"><span>Weekly rent</span><input name="weeklyRent" inputMode="numeric" defaultValue={String(inputs.weeklyRent)} /></label>

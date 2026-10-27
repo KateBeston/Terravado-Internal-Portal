@@ -59,6 +59,11 @@ export async function saveRunAction(fd: FormData) {
   const client = await svc.getClient(tenantId, clientId);
   if (!client) return;
 
+  // If a property was modelled, carry its saved deep financials into the run so
+  // the snapshot reflects the real expenses/loan/depreciation, not seed defaults.
+  const propertyId = s(fd, "propertyId");
+  const prop = propertyId ? await svc.getProperty(tenantId, propertyId) : null;
+
   // Re-run the model server-side from the submitted inputs, so the saved
   // snapshot always matches the engine rather than trusting client-sent figures.
   const inputs: ModelInputs = {
@@ -77,6 +82,7 @@ export async function saveRunAction(fd: FormData) {
     monthlyCommitments: n(fd, "monthlyCommitments"),
     cardLimits: n(fd, "cardLimits"),
     hecsBalance: n(fd, "hecsBalance"),
+    modelling: prop?.details?.modelling,
   };
   const r = runModel(inputs);
   const stress = runStressTest(inputs);
@@ -178,6 +184,14 @@ export async function addPropertyListItemAction(fd: FormData) {
     const title = { ...(details.title ?? {}) };
     title.encumbrances = [...(title.encumbrances ?? []), { type: s(fd, "type"), detail: s(fd, "detail"), impact: s(fd, "impact") }];
     details.title = title;
+  } else if (list === "expenses") {
+    const mod = { ...(details.modelling ?? {}) };
+    mod.expenses = [...(mod.expenses ?? []), { name: s(fd, "name"), amount: n(fd, "amount"), freq: s(fd, "freq") ?? "Annual", ded: s(fd, "ded") !== "false" }];
+    details.modelling = mod;
+  } else if (list === "capex") {
+    const mod = { ...(details.modelling ?? {}) };
+    mod.capex = [...(mod.capex ?? []), { year: n(fd, "year"), name: s(fd, "name"), cost: n(fd, "cost"), upliftPct: n(fd, "upliftPct"), rentUplift: n(fd, "rentUplift") }];
+    details.modelling = mod;
   }
   await svc.updateProperty(tenantId, id, { details });
   revalidatePath(`/properties/${id}`, "layout");
@@ -196,7 +210,37 @@ export async function removePropertyListItemAction(fd: FormData) {
     const title = { ...(details.title ?? {}) }; const a = [...(title.easements ?? [])]; a.splice(idx, 1); title.easements = a; details.title = title;
   } else if (list === "encumbrances") {
     const title = { ...(details.title ?? {}) }; const a = [...(title.encumbrances ?? [])]; a.splice(idx, 1); title.encumbrances = a; details.title = title;
+  } else if (list === "expenses") {
+    const mod = { ...(details.modelling ?? {}) }; const a = [...(mod.expenses ?? [])]; a.splice(idx, 1); mod.expenses = a; details.modelling = mod;
+  } else if (list === "capex") {
+    const mod = { ...(details.modelling ?? {}) }; const a = [...(mod.capex ?? [])]; a.splice(idx, 1); mod.capex = a; details.modelling = mod;
   }
+  await svc.updateProperty(tenantId, id, { details });
+  revalidatePath(`/properties/${id}`, "layout");
+}
+
+/* Deep financial inputs for a property — saved per section into details.modelling. */
+export async function savePropertyModellingAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id"); const section = s(fd, "section");
+  if (!id || !section) return;
+  const p = await svc.getProperty(tenantId, id); if (!p) return;
+  const details = { ...(p.details ?? {}) };
+  const mod = { ...(details.modelling ?? {}) };
+  if (section === "income") {
+    mod.otherIncome = n(fd, "otherIncome"); mod.pmFeePct = n(fd, "pmFeePct");
+    mod.lettingWeeks = n(fd, "lettingWeeks"); mod.vacancyWeeks = n(fd, "vacancyWeeks");
+  } else if (section === "loan") {
+    mod.repaymentType = s(fd, "repaymentType"); mod.ioYears = n(fd, "ioYears"); mod.termYears = n(fd, "termYears");
+    mod.offsetBalance = n(fd, "offsetBalance"); mod.annualPackageFee = n(fd, "annualPackageFee");
+  } else if (section === "entry") {
+    mod.otherPurchaseCosts = n(fd, "otherPurchaseCosts");
+    mod.capitaliseLmi = s(fd, "capitaliseLmi") === "on" || s(fd, "capitaliseLmi") === "true";
+  } else if (section === "dep") {
+    mod.depMode = s(fd, "depMode"); mod.plantValue = n(fd, "plantValue"); mod.constructionCost = n(fd, "constructionCost");
+  }
+  details.modelling = mod;
   await svc.updateProperty(tenantId, id, { details });
   revalidatePath(`/properties/${id}`, "layout");
 }

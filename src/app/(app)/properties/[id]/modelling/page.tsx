@@ -13,13 +13,8 @@ export default async function PropertyModellingTab({ params }: { params: { id: s
   const p = await getProperty(tenantId, params.id);
   if (!p) notFound();
   const d = p.details ?? {};
-
-  const q = new URLSearchParams();
-  q.set("address", p.address);
-  if (p.state) q.set("state", p.state);
-  if (p.price) q.set("price", String(p.price));
-  if (d.weeklyRent) q.set("weeklyRent", String(d.weeklyRent));
-  if (d.locality?.annualGrowthPct) q.set("growthPct", String(d.locality.annualGrowthPct));
+  const m = d.modelling ?? {};
+  const hasDeep = !!(m.expenses?.length || m.capex?.length || m.repaymentType || m.otherPurchaseCosts !== undefined || m.plantValue !== undefined);
 
   return (
     <>
@@ -36,11 +31,17 @@ export default async function PropertyModellingTab({ params }: { params: { id: s
       <div className="panel">
         <h2>Run the model</h2>
         <p className="muted" style={{ marginTop: -4 }}>
-          Open this property in the Modeller with its address, price{d.weeklyRent ? ", rent" : ""}
-          {d.locality?.annualGrowthPct ? " and suburb growth" : ""} carried across. Pick the client there to assess it
-          against their position, then save the run to their file.
+          Open this property in the Modeller with its record carried across — address, price, rent
+          {hasDeep ? ", and its deep financials (expenses, loan structure, depreciation, capex)" : ""}.
+          Pick the client there to assess it against their position, then save the run to their file.
         </p>
-        <Link className="btn" href={`/modeller?${q.toString()}`}>Open in Modeller →</Link>
+        {!hasDeep && (
+          <p className="muted" style={{ fontSize: 12 }}>
+            No deep financials saved yet — the model will use standard assumptions. Add them on the{" "}
+            <Link href={`/properties/${p.id}/financials`}>Financials tab</Link> for a full-depth run.
+          </p>
+        )}
+        <Link className="btn" href={`/modeller?propertyId=${p.id}`}>Open in Modeller →</Link>
       </div>
     </>
   );

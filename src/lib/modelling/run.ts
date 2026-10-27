@@ -6,6 +6,9 @@
 import { seedContext } from "@/lib/engine/seeds";
 import { project, monteCarlo, serviceability, verdictOf } from "@/lib/engine/engine";
 import { provenance } from "@/lib/assurance/provenance";
+import type { PropertyModelling } from "@/lib/domain/types";
+
+const num = (v: unknown): number => { const n = Number(v); return isFinite(n) ? n : 0; };
 
 export interface ModelInputs {
   address?: string;
@@ -26,6 +29,10 @@ export interface ModelInputs {
   monthlyCommitments?: number;
   cardLimits?: number;
   hecsBalance?: number;
+  // Optional deep property financials — operating expenses, loan structure,
+  // acquisition costs, depreciation and capex. Unset fields fall back to the
+  // engine's standard assumptions, so the simple run is unchanged.
+  modelling?: PropertyModelling;
 }
 
 export interface ProjectionRow {
@@ -73,10 +80,38 @@ function core(inp: ModelInputs): Core {
     client.liabilities = liab;
   }
 
+  // Deep property financials (optional) — override the seed property's standard
+  // assumptions with the entered expenses, loan structure, acquisition costs,
+  // depreciation and capex. Unset fields keep the engine's assumptions.
+  const m = inp.modelling;
+  if (m) {
+    if (m.otherIncome !== undefined) p.income.otherIncome = m.otherIncome;
+    if (m.pmFeePct !== undefined) p.income.pmFeePct = m.pmFeePct;
+    if (m.lettingWeeks !== undefined) p.income.lettingWeeks = m.lettingWeeks;
+    if (m.vacancyWeeks !== undefined) { p.demand.vacancyWeeks = m.vacancyWeeks; p.demand.autoVacancy = false; }
+    if (m.expenses && m.expenses.length) {
+      p.expenses = m.expenses.map((e, i) => ({ id: `x_${i}`, name: e.name || "Expense", amount: num(e.amount), freq: e.freq || "Annual", startMonth: 1, esc: 3.0, ded: e.ded !== false }));
+    }
+    if (m.repaymentType) p.loan.repaymentType = m.repaymentType;
+    if (m.ioYears !== undefined) p.loan.ioYears = m.ioYears;
+    if (m.termYears !== undefined) p.loan.termYears = m.termYears;
+    if (m.offsetBalance !== undefined) p.loan.offsetBalance = m.offsetBalance;
+    if (m.annualPackageFee !== undefined) p.loan.annualPackageFee = m.annualPackageFee;
+    if (m.otherPurchaseCosts !== undefined) p.entry.items = [{ id: "e_other", name: "Acquisition costs", amount: m.otherPurchaseCosts }];
+    if (m.capitaliseLmi !== undefined) p.entry.capitaliseLmi = m.capitaliseLmi;
+    if (m.depMode) p.dep.mode = m.depMode;
+    if (m.plantValue !== undefined) { p.dep.plantValue = m.plantValue; p.dep.plantEligible = m.plantValue > 0; }
+    if (m.constructionCost !== undefined) p.dep.constructionCost = m.constructionCost;
+  }
+
   // Strip the sample property's own history/title artifacts so the verdict's
-  // flags reflect the entered inputs, not 14 Sample St's backstory.
+  // flags reflect the entered inputs, not 14 Sample St's backstory. Capex
+  // events are kept when the property supplies its own.
   p.saleHistory = []; p.title.easements = []; p.title.encumbrances = [];
-  p.comps = []; p.features = []; p.events = []; p.projects = [];
+  p.comps = []; p.features = []; p.projects = [];
+  p.events = (m && m.capex && m.capex.length)
+    ? m.capex.map((c, i) => ({ id: `ev_${i}`, year: num(c.year), type: "Renovation", name: c.name || "Capex", cost: num(c.cost), upliftPct: num(c.upliftPct), rentUplift: num(c.rentUplift), status: "Planned" }))
+    : [];
 
   const P = project(p, {}, ctx) as any;
   const sv = serviceability(client, lender, { proposedLoan: P.acq.loan, newAnnualRent: inp.weeklyRent * 52 }, ctx) as any;

@@ -57,12 +57,32 @@ export interface PropertyPhysical {
   landSize?: number; internalArea?: number; buildYear?: number;
   construction?: string; notes?: string;
 }
+/* Deep financial modelling inputs — the prototype's modelling depth, persisted
+   on the property and fed to the engine when the property is modelled. Any
+   field left unset falls back to the engine's standard assumptions. */
+export interface PropertyExpense { name?: string; amount?: number; freq?: string; ded?: boolean; }
+export interface CapexEvent { year?: number; name?: string; cost?: number; upliftPct?: number; rentUplift?: number; }
+export interface PropertyModelling {
+  // Income & tenancy
+  otherIncome?: number; pmFeePct?: number; lettingWeeks?: number; vacancyWeeks?: number;
+  // Loan structure
+  repaymentType?: string; ioYears?: number; termYears?: number; offsetBalance?: number; annualPackageFee?: number;
+  // Acquisition
+  otherPurchaseCosts?: number; capitaliseLmi?: boolean;
+  // Depreciation
+  depMode?: string; plantValue?: number; constructionCost?: number;
+  // Lists
+  expenses?: PropertyExpense[];
+  capex?: CapexEvent[];
+}
+
 export interface PropertyDetails {
   weeklyRent?: number;
   title?: PropertyTitle;
   locality?: PropertyLocality;
   physical?: PropertyPhysical;
   sales?: SaleRecord[];
+  modelling?: PropertyModelling;
 }
 
 export interface Property extends Entity {
