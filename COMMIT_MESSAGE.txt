@@ -1,33 +1,28 @@
-feat(entities): unify companies + entities into one typed record with person<->entity role memberships
+feat(engine): assess serviceability from the detailed income & liability lines
 
 INTERNAL PORTAL.
 
-Companies and ownership entities are now one record (as "a company is an
-entity"). The unified Entities directory holds every company, trust, SMSF or
-partnership that holds property AND every network org — agency, lender,
-conveyancer, accountant, developer — each with a type, ABN, state and contact
-details.
+The Modeller and deal pack now derive the assessment figures from a person's
+detailed Financials record instead of only the manual summary:
 
-Entity record is tabbed (same chrome as the person/property records):
-- Details      — name, type, state, ABN, phone/email/website, primary client.
-- People & roles — who is linked and in what role (director, trustee,
-  beneficiary, member, signatory...), with primary/can-sign flags.
-- Properties   — properties attributed to this entity.
+- deriveAssessableFinances() collapses the structured lines into the summary
+  the engine already consumes, so the engine math (and its 20 assurance checks)
+  is unchanged — only the inputs are better.
+- Income by owner: Applicant + Joint lines total to gross income, Partner lines
+  to partner income; each line annualised by its frequency. Self-employed lines
+  average the latest and prior year when a prior year is given, plus add-backs.
+  Income is fed at gross — lender-specific shading stays in the lender policy
+  layer, so nothing is double-counted.
+- Liabilities: credit-card limits, HECS-HELP balances and other repayments
+  (annualised to monthly) are summed from the liability lines.
+- When the structured lists are present they are authoritative; otherwise the
+  stored summary fields are used as-is. The Modeller still lets you override any
+  figure on the form.
 
-Person <-> entity memberships: a new entity_members join carries the role, so a
-person can be director of one entity and trustee of another. The person record's
-Entities tab shows and manages their memberships.
+Wired into the Modeller (contacts[].finances) and the deal pack.
 
-Property ownership can now be attributed to an entity (owning trust/SMSF/company
-selector on the property Overview); the entity's Properties tab lists them.
-
-Migration 0012 (applied): widens entities.kind to free text, adds phone/email/
-website; folds companies into entities preserving ids (so contacts.company_id
-resolves); drops the companies FK; creates entity_members (+RLS, indexes). The
-companies table is left dormant. /companies and /companies/[id] redirect to the
-entity record; Companies is removed from the nav.
-
-Verified: tsc --noEmit clean · verify:engine 20/20 · next build green.
+Verified: tsc --noEmit clean · verify:engine 20/20 · next build green ·
+derivation arithmetic spot-checked.
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV

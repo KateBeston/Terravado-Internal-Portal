@@ -3,6 +3,7 @@ import { getCurrentTenant } from "@/lib/auth/tenant";
 import { listClients, getClient, listReportSnapshots, listProperties, getProperty, listLenders } from "@/lib/domain/service";
 import { saveClientFinancesAction, saveRunAction } from "@/app/actions";
 import { runModel, runScenarios, runStressTest, runLenderCompare, type ModelInputs } from "@/lib/modelling/run";
+import { deriveAssessableFinances } from "@/lib/domain/finances";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -37,7 +38,7 @@ export default async function ModellerPage({ searchParams }: { searchParams: Rec
   // Selected client (if any) and their stored financial position.
   const clientId = asStr(searchParams.clientId, "");
   const client = clientId ? (clients.find((c) => c.id === clientId) ?? (await getClient(tenantId, clientId))) : null;
-  const fin = client?.finances ?? {};
+  const fin = deriveAssessableFinances(client?.finances);
 
   // Selected property (if any) and its stored record / deep financials.
   const propertyId = asStr(searchParams.propertyId, "");

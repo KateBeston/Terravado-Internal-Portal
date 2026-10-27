@@ -6,6 +6,7 @@
    lodgement-platform partner access and the current schema. */
 import type { Client, Property } from "@/lib/domain/types";
 import { runModel, runLenderCompare, type ModelInputs } from "@/lib/modelling/run";
+import { deriveAssessableFinances } from "@/lib/domain/finances";
 import { provenance } from "@/lib/assurance/provenance";
 
 export interface DealPack {
@@ -31,7 +32,7 @@ export interface DealPack {
 /** Build the engine inputs for a client + property (+ optional lender products). */
 export function dealInputs(client: Client, property: Property, engineLenders?: any[]): ModelInputs {
   const d = property.details ?? {};
-  const fin = client.finances ?? {};
+  const fin = deriveAssessableFinances(client.finances);
   return {
     address: property.address,
     state: property.state ?? d.locality?.region ?? "NSW",
@@ -59,7 +60,7 @@ export function assembleDealPack(client: Client, property: Property, engineLende
   const lc = runLenderCompare(inp);
   const best = lc.rows.find((x) => x.bestFit) ?? lc.rows[0];
   const d = property.details ?? {};
-  const fin = client.finances ?? {};
+  const fin = deriveAssessableFinances(client.finances);
   const ph = d.physical ?? {};
   const m = d.modelling ?? {};
   const prov = provenance();
