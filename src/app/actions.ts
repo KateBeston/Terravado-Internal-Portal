@@ -45,22 +45,99 @@ export async function deleteClientAction(fd: FormData) {
   const id = s(fd, "id");
   if (id) { await svc.removeClient(tenantId, id); revalidatePath("/clients"); }
 }
+const newId = (): string =>
+  globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : `id-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+/* Read-merge-write a person's finances jsonb so structured lists and the
+   summary never clobber each other. */
+async function withFinances(id: string | undefined, fn: (f: Record<string, any>) => void) {
+  if (!id) return;
+  const { tenantId } = await getCurrentTenant();
+  const person = await svc.getContact(tenantId, id);
+  if (!person) return;
+  const finances: Record<string, any> = { ...(person.finances ?? {}) };
+  fn(finances);
+  await svc.updateContact(tenantId, id, { finances });
+  revalidatePath(`/contacts/${id}/financials`);
+}
+
 export async function saveClientFinancesAction(fd: FormData) {
   await requireUser();
-  const { tenantId } = await getCurrentTenant();
   const id = s(fd, "clientId");
-  if (!id) return;
-  const finances = {
-    grossIncome: n(fd, "grossIncome"),
-    partnerIncome: n(fd, "partnerIncome"),
-    livingExpMonthly: n(fd, "livingExpMonthly"),
-    dependants: n(fd, "dependants"),
-    monthlyCommitments: n(fd, "monthlyCommitments"),
-    cardLimits: n(fd, "cardLimits"),
-    hecsBalance: n(fd, "hecsBalance"),
-  };
-  await svc.updateClient(tenantId, id, { finances });
+  await withFinances(id, (f) => {
+    f.grossIncome = n(fd, "grossIncome");
+    f.partnerIncome = n(fd, "partnerIncome");
+    f.livingExpMonthly = n(fd, "livingExpMonthly");
+    f.dependants = n(fd, "dependants");
+    f.monthlyCommitments = n(fd, "monthlyCommitments");
+    f.cardLimits = n(fd, "cardLimits");
+    f.hecsBalance = n(fd, "hecsBalance");
+  });
   revalidatePath("/modeller");
+}
+
+// --- Employment ---
+export async function addEmploymentAction(fd: FormData) {
+  await requireUser();
+  await withFinances(s(fd, "personId"), (f) => {
+    f.employment = [...(f.employment ?? []), {
+      id: newId(), employer: s(fd, "employer"), status: s(fd, "status"), basis: s(fd, "basis"),
+      occupation: s(fd, "occupation"), industry: s(fd, "industry"), startDate: s(fd, "startDate"),
+      current: s(fd, "current") === "on", onProbation: s(fd, "onProbation") === "on", notes: s(fd, "notes"),
+    }];
+  });
+}
+export async function deleteEmploymentAction(fd: FormData) {
+  await requireUser();
+  const lineId = s(fd, "lineId");
+  await withFinances(s(fd, "personId"), (f) => { f.employment = (f.employment ?? []).filter((x: any) => x.id !== lineId); });
+}
+
+// --- Income ---
+export async function addIncomeAction(fd: FormData) {
+  await requireUser();
+  await withFinances(s(fd, "personId"), (f) => {
+    f.income = [...(f.income ?? []), {
+      id: newId(), type: s(fd, "type"), owner: s(fd, "owner"), amount: n(fd, "amount"), frequency: s(fd, "frequency"),
+      priorYearAmount: n(fd, "priorYearAmount"), addBacks: n(fd, "addBacks"), notes: s(fd, "notes"),
+    }];
+  });
+}
+export async function deleteIncomeAction(fd: FormData) {
+  await requireUser();
+  const lineId = s(fd, "lineId");
+  await withFinances(s(fd, "personId"), (f) => { f.income = (f.income ?? []).filter((x: any) => x.id !== lineId); });
+}
+
+// --- Assets ---
+export async function addAssetAction(fd: FormData) {
+  await requireUser();
+  await withFinances(s(fd, "personId"), (f) => {
+    f.assets = [...(f.assets ?? []), {
+      id: newId(), type: s(fd, "type"), description: s(fd, "description"), value: n(fd, "value"), owner: s(fd, "owner"),
+    }];
+  });
+}
+export async function deleteAssetAction(fd: FormData) {
+  await requireUser();
+  const lineId = s(fd, "lineId");
+  await withFinances(s(fd, "personId"), (f) => { f.assets = (f.assets ?? []).filter((x: any) => x.id !== lineId); });
+}
+
+// --- Liabilities ---
+export async function addLiabilityAction(fd: FormData) {
+  await requireUser();
+  await withFinances(s(fd, "personId"), (f) => {
+    f.liabilities = [...(f.liabilities ?? []), {
+      id: newId(), type: s(fd, "type"), description: s(fd, "description"), limit: n(fd, "limit"),
+      balance: n(fd, "balance"), repayment: n(fd, "repayment"), frequency: s(fd, "frequency"), owner: s(fd, "owner"),
+    }];
+  });
+}
+export async function deleteLiabilityAction(fd: FormData) {
+  await requireUser();
+  const lineId = s(fd, "lineId");
+  await withFinances(s(fd, "personId"), (f) => { f.liabilities = (f.liabilities ?? []).filter((x: any) => x.id !== lineId); });
 }
 export async function saveRunAction(fd: FormData) {
   await requireUser();

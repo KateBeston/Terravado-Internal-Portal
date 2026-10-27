@@ -1,15 +1,28 @@
-chore(ui): collapse Clients into Contacts, make own record reachable, square the UI
+feat(financials): full serviceability record — employment, income by type, assets, liabilities
 
 INTERNAL PORTAL.
 
-- De-duplicate people: "Clients" is removed from the nav — a client is just a
-  contact with the Borrower role, so there is one directory (Contacts). /clients
-  now redirects to /contacts. The Contacts "Add" form gains a roles picker
-  (tick Borrower to make someone a modelled/assessed client).
-- Reach your own record: the signed-in user's name in the nav is now a link to
-  their person record (resolved by email), falling back to the Contacts list.
-- Rectangular UI: removed rounded corners on buttons, panels, cards, inputs,
-  badges, tables and images — everything is square now.
+The Financials tab on the person record is now the full serviceability record,
+with four detailed sections plus the assessment summary:
+
+- Employment — employer, status (full-time/part-time/casual/contract/self-
+  employed/retired/not employed), PAYG vs self-employed basis, occupation,
+  industry, start date (time-in-role derived), current-role and on-probation
+  flags. Multiple/previous employers supported.
+- Income — one line per source, typed for serviceability: PAYG base/overtime/
+  bonus/commission/allowances, self-employed (sole trader/company/trust) with
+  prior-year figure + add-backs, rental, government/age pension, super/retiree
+  drawdown, investment/dividends, maintenance, other. Owner (applicant/partner/
+  joint), amount + frequency, annualised automatically.
+- Assets — property, savings, super, vehicle, shares, business, other.
+- Liabilities — home/investment loan, card, personal/car loan, HECS-HELP,
+  BNPL, other, with limit, balance, repayment + frequency.
+- Summary cards (income p.a., assets, liabilities, monthly repayments) and the
+  assessment summary the Modeller reads today.
+
+All stored in the contacts.finances jsonb (no migration). Finances writes now
+read-merge-write so the structured lists and the summary never clobber each
+other. The engine will consume the detailed lines directly as the next step.
 
 Verified: tsc --noEmit clean · verify:engine 20/20 · next build green.
 

@@ -3,17 +3,86 @@ import type { Entity } from "@/lib/data/repository";
 export type Role = "owner" | "admin" | "adviser" | "viewer";
 export type PropertyStatus = "considering" | "owned" | "sold";
 
-/* A client's financial position — drives serviceability when a property is
-   modelled for this client. All annual figures unless the name says monthly. */
-export interface ClientFinances {
-  grossIncome?: number;        // annual gross, primary
-  partnerIncome?: number;      // annual gross, partner
-  livingExpMonthly?: number;   // declared monthly living expenses
-  dependants?: number;
-  monthlyCommitments?: number; // existing loan / other repayments per month
-  cardLimits?: number;         // total credit-card limits
-  hecsBalance?: number;        // HECS/HELP balance
+/* A person's financial position — the serviceability record. The legacy summary
+   fields are what the Modeller assesses today; the structured lists below are
+   the full detail (income by type, employment, assets, liabilities) and will
+   feed the engine as the serviceability build deepens. */
+
+/* An employment / income-source engagement. Time-in-role is derived from
+   startDate at display time. */
+export interface EmploymentRecord {
+  id?: string;
+  employer?: string;
+  status?: string;      // Full-time / Part-time / Casual / Contract / Self-employed / Retired / Not employed
+  basis?: string;       // PAYG / Self-employed
+  occupation?: string;
+  industry?: string;
+  startDate?: string;   // ISO date
+  current?: boolean;
+  onProbation?: boolean;
+  notes?: string;
 }
+
+/* One income line. `type` carries the serviceability treatment; self-employed
+   lines use priorYearAmount (2-yr) and addBacks. */
+export interface IncomeLine {
+  id?: string;
+  type?: string;        // see INCOME_TYPES
+  owner?: string;       // Applicant / Partner
+  amount?: number;
+  frequency?: string;   // Annual / Monthly / Fortnightly / Weekly
+  priorYearAmount?: number;  // self-employed: prior financial year
+  addBacks?: number;         // self-employed: depreciation/interest/one-offs added back
+  notes?: string;
+}
+
+export interface AssetLine {
+  id?: string;
+  type?: string;        // Property / Savings / Superannuation / Vehicle / Shares / Business / Other
+  description?: string;
+  value?: number;
+  owner?: string;
+}
+
+export interface LiabilityLine {
+  id?: string;
+  type?: string;        // Home loan / Investment loan / Credit card / Personal loan / Car loan / HECS-HELP / BNPL / Other
+  description?: string;
+  limit?: number;       // for revolving facilities (cards, LOC)
+  balance?: number;
+  repayment?: number;
+  frequency?: string;   // repayment frequency
+  owner?: string;
+}
+
+export interface ClientFinances {
+  // Legacy summary — the Modeller assesses these (annual unless named monthly).
+  grossIncome?: number;
+  partnerIncome?: number;
+  livingExpMonthly?: number;
+  dependants?: number;
+  monthlyCommitments?: number;
+  cardLimits?: number;
+  hecsBalance?: number;
+  // Structured detail.
+  employment?: EmploymentRecord[];
+  income?: IncomeLine[];
+  assets?: AssetLine[];
+  liabilities?: LiabilityLine[];
+}
+
+export const EMPLOYMENT_STATUS = ["Full-time", "Part-time", "Casual", "Contract", "Self-employed", "Retired", "Not employed"] as const;
+export const EMPLOYMENT_BASIS = ["PAYG", "Self-employed"] as const;
+export const INCOME_TYPES = [
+  "PAYG base", "PAYG overtime", "PAYG bonus", "PAYG commission", "PAYG allowances",
+  "Self-employed (sole trader)", "Self-employed (company)", "Self-employed (trust)",
+  "Rental income", "Government pension", "Age pension", "Super / retiree drawdown",
+  "Investment / dividends", "Child support / maintenance", "Other",
+] as const;
+export const INCOME_FREQ = ["Annual", "Monthly", "Fortnightly", "Weekly"] as const;
+export const ASSET_TYPES = ["Property", "Savings / cash", "Superannuation", "Vehicle", "Shares / managed funds", "Business", "Other"] as const;
+export const LIABILITY_TYPES = ["Home loan", "Investment loan", "Credit card", "Personal loan", "Car loan", "HECS-HELP", "BNPL", "Other"] as const;
+export const OWNER_OPTS = ["Applicant", "Partner", "Joint"] as const;
 
 export interface Client extends Entity {
   name: string;
