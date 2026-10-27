@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
 import { getProperty } from "@/lib/domain/service";
 import { savePropertyDetailsAction, pullLocalityAction } from "@/app/actions";
+import { GOOGLE_MAPS_CONFIGURED, staticMapUrl, streetViewUrl, mapsLinkUrl } from "@/lib/integrations/maps";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -13,9 +14,33 @@ export default async function PropertyLocalityTab({ params }: { params: { id: st
   const p = await getProperty(tenantId, params.id);
   if (!p) notFound();
   const l = p.details?.locality ?? {};
+  const sat = staticMapUrl(p.address, { maptype: "hybrid" });
+  const street = streetViewUrl(p.address);
 
   return (
     <>
+      <div className="panel">
+        <h2>Map, satellite &amp; street view</h2>
+        {GOOGLE_MAPS_CONFIGURED && sat ? (
+          <>
+            <div className="split" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={sat} alt={`Satellite view of ${p.address}`} style={{ width: "100%", borderRadius: 8, border: "1px solid var(--line)" }} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {street && <img src={street} alt={`Street view of ${p.address}`} style={{ width: "100%", borderRadius: 8, border: "1px solid var(--line)" }} />}
+            </div>
+            <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>
+              Satellite &amp; street view via Google Maps. <a href={mapsLinkUrl(p.address)} target="_blank" rel="noreferrer">Open in Google Maps ↗</a>
+            </p>
+          </>
+        ) : (
+          <p className="muted" style={{ marginTop: -4 }}>
+            <a href={mapsLinkUrl(p.address)} target="_blank" rel="noreferrer">View on Google Maps ↗</a> — add a
+            <code> NEXT_PUBLIC_GOOGLE_MAPS_KEY</code> to embed the map, satellite and street view here (Google Cloud project + billing; free monthly tier).
+          </p>
+        )}
+      </div>
+
       <div className="panel">
         <h2>Locality &amp; suburb</h2>
         <form action={savePropertyDetailsAction}>

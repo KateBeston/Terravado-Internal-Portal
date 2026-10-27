@@ -6,6 +6,7 @@ import { CORELOGIC_CONFIGURED } from "./property-data/corelogic";
 import { SIMPOLOGY_CONFIGURED, NEXTGEN_CONFIGURED } from "./lodgement";
 import { DOMAIN_CONFIGURED } from "./listings";
 import { CDR_CONFIGURED } from "./bank-products";
+import { GOOGLE_MAPS_CONFIGURED } from "./maps";
 
 export interface IntegrationStatus {
   key: string;
@@ -40,6 +41,13 @@ export function integrationStatuses(): IntegrationStatus[] {
       fallback: "Manual property entry",
       enables: "On-market listings for property matching",
       access: "Domain API agreement (restrictive terms: no resale, onshore)",
+    },
+    {
+      key: "googlemaps", label: "Google Maps", category: "Geography / imagery",
+      configured: GOOGLE_MAPS_CONFIGURED, envVar: "NEXT_PUBLIC_GOOGLE_MAPS_KEY",
+      fallback: "Link out to Google Maps (no embed)",
+      enables: "Embedded map, satellite & street view on the property record",
+      access: "Google Cloud project + billing (free monthly tier); restrict the key by referrer",
     },
     {
       key: "cdr", label: "CDR Open Banking", category: "Lender product data",
