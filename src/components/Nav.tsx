@@ -8,6 +8,7 @@ const LINKS: [string, string][] = [
   ["/workspace", "Workspace"],
   ["/lenders", "Lenders"],
   ["/clients", "Clients"],
+  ["/portfolio", "Portfolio"],
   ["/contacts", "Contacts"],
   ["/properties", "Properties"],
   ["/finance", "Finance"],

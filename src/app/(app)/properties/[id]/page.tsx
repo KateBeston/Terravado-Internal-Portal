@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
-import { getProperty } from "@/lib/domain/service";
+import { getProperty, listClients } from "@/lib/domain/service";
+import { updatePropertyClientAction } from "@/app/actions";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -13,6 +14,7 @@ export default async function PropertyOverview({ params }: { params: { id: strin
   const { tenantId } = await getCurrentTenant();
   const p = await getProperty(tenantId, params.id);
   if (!p) notFound();
+  const clients = await listClients(tenantId);
 
   const d = p.details ?? {};
   const t = d.title ?? {}; const l = d.locality ?? {}; const ph = d.physical ?? {};
@@ -26,6 +28,20 @@ export default async function PropertyOverview({ params }: { params: { id: strin
         <div className="card"><div className="k">Land size</div><div className="v">{ph.landSize ? `${ph.landSize} m²` : "—"}</div></div>
         <div className="card"><div className="k">Suburb median</div><div className="v">{money(l.suburbMedian)}</div></div>
         <div className="card"><div className="k">Last sale</div><div className="v">{lastSale ? money(lastSale.price) : "—"}</div></div>
+      </div>
+
+      <div className="panel">
+        <h2>Client</h2>
+        <form action={updatePropertyClientAction} style={{ display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+          <input type="hidden" name="id" value={p.id} />
+          <label className="f" style={{ flex: 1, minWidth: 220, marginBottom: 0 }}><span>Assigned client (rolls up into their portfolio)</span>
+            <select name="clientId" defaultValue={p.clientId ?? ""}>
+              <option value="">— Unassigned —</option>
+              {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </label>
+          <button className="btn" type="submit" style={{ margin: 0 }}>Save</button>
+        </form>
       </div>
 
       <div className="panel">

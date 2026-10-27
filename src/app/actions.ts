@@ -128,8 +128,18 @@ export async function createPropertyAction(fd: FormData) {
   const { tenantId } = await getCurrentTenant();
   const address = s(fd, "address");
   if (!address) return;
-  await svc.addProperty(tenantId, { address, state: s(fd, "state"), price: n(fd, "price"), status: (s(fd, "status") as PropertyStatus) ?? "considering" });
+  await svc.addProperty(tenantId, { address, state: s(fd, "state"), price: n(fd, "price"), status: (s(fd, "status") as PropertyStatus) ?? "considering", clientId: s(fd, "clientId") });
   revalidatePath("/properties");
+  revalidatePath("/portfolio");
+}
+export async function updatePropertyClientAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id");
+  if (!id) return;
+  await svc.updateProperty(tenantId, id, { clientId: s(fd, "clientId") ?? undefined });
+  revalidatePath(`/properties/${id}`, "layout");
+  revalidatePath("/portfolio");
 }
 export async function deletePropertyAction(fd: FormData) {
   await requireUser();

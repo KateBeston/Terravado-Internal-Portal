@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
-import { listProperties } from "@/lib/domain/service";
+import { listProperties, listClients } from "@/lib/domain/service";
 import { createPropertyAction, deletePropertyAction } from "@/app/actions";
 import Link from "next/link";
 
@@ -14,6 +14,7 @@ export default async function PropertiesPage() {
   await requireUser();
   const { tenantId } = await getCurrentTenant();
   const properties = await listProperties(tenantId);
+  const clients = await listClients(tenantId);
 
   return (
     <section>
@@ -30,9 +31,14 @@ export default async function PropertiesPage() {
             </label>
             <label className="f"><span>Price</span><input name="price" inputMode="numeric" placeholder="1,250,000" /></label>
           </div>
-          <label className="f"><span>Status</span>
-            <select name="status" defaultValue="considering">{STATUSES.map((s) => <option key={s}>{s}</option>)}</select>
-          </label>
+          <div className="row">
+            <label className="f"><span>Status</span>
+              <select name="status" defaultValue="considering">{STATUSES.map((s) => <option key={s}>{s}</option>)}</select>
+            </label>
+            <label className="f"><span>Client (optional)</span>
+              <select name="clientId" defaultValue=""><option value="">— No client —</option>{clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+            </label>
+          </div>
           <button className="btn" type="submit">Add property</button>
         </form>
       </div>
