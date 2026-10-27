@@ -302,3 +302,59 @@ export async function deleteBusinessDocAction(fd: FormData) {
   const id = s(fd, "id");
   if (id) { await svc.removeBusinessDoc(tenantId, id); revalidatePath("/business"); }
 }
+
+// --- Lenders (lender / bank products) ---
+function lenderPolicyFromForm(fd: FormData) {
+  return {
+    bufferPct: n(fd, "bufferPct"), floorPct: n(fd, "floorPct"), varRate: n(fd, "varRate"), ioLoading: n(fd, "ioLoading"),
+    rentShadePct: n(fd, "rentShadePct"), otShadePct: n(fd, "otShadePct"), bonusShadePct: n(fd, "bonusShadePct"),
+    commissionShadePct: n(fd, "commissionShadePct"), selfEmpShadePct: n(fd, "selfEmpShadePct"),
+    ngAddBack: s(fd, "ngAddBack") === "on" || s(fd, "ngAddBack") === "true",
+    hemMonthly: n(fd, "hemMonthly"), hemPerDependant: n(fd, "hemPerDependant"), hemIncomeScale: n(fd, "hemIncomeScale"),
+    cardAssessPct: n(fd, "cardAssessPct"),
+    hecsAssessed: s(fd, "hecsAssessed") === "on" || s(fd, "hecsAssessed") === "true",
+    existingDebtAssess: s(fd, "existingDebtAssess") ?? "Assessed",
+    maxLVR: n(fd, "maxLVR"), maxDTI: n(fd, "maxDTI"),
+    estFee: n(fd, "estFee"), valFee: n(fd, "valFee"), annualFee: n(fd, "annualFee"), lmiFactor: n(fd, "lmiFactor"),
+  };
+}
+const DEFAULT_LENDER_POLICY = {
+  bufferPct: 3.0, floorPct: 5.5, varRate: 6.1, ioLoading: 0.25,
+  rentShadePct: 20, otShadePct: 20, bonusShadePct: 20, commissionShadePct: 20, selfEmpShadePct: 0,
+  ngAddBack: true, hemMonthly: 3400, hemPerDependant: 520, hemIncomeScale: 0.06,
+  cardAssessPct: 3.8, hecsAssessed: true, existingDebtAssess: "Assessed",
+  maxLVR: 90, maxDTI: 7.0, estFee: 600, valFee: 300, annualFee: 395, lmiFactor: 1.0,
+};
+export async function createLenderAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const name = s(fd, "name");
+  if (!name) return;
+  // New products start from sensible defaults; the full policy is then tuned on
+  // the lender's edit page.
+  await svc.addLender(tenantId, {
+    name, kind: s(fd, "kind"),
+    active: s(fd, "active") !== "false",
+    policy: DEFAULT_LENDER_POLICY,
+  });
+  revalidatePath("/lenders");
+}
+export async function updateLenderAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id");
+  if (!id) return;
+  await svc.updateLender(tenantId, id, {
+    name: s(fd, "name"), kind: s(fd, "kind"),
+    active: s(fd, "active") !== "false",
+    policy: lenderPolicyFromForm(fd),
+  });
+  revalidatePath(`/lenders/${id}`);
+  revalidatePath("/lenders");
+}
+export async function deleteLenderAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id");
+  if (id) { await svc.removeLender(tenantId, id); revalidatePath("/lenders"); }
+}

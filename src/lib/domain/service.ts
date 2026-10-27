@@ -2,7 +2,7 @@
    layer above the repository. UI and server actions call these, never the
    repository directly. */
 import { getRepository } from "@/lib/data";
-import type { BusinessDocument, Client, Contact, Property, ReportSnapshot } from "./types";
+import type { BusinessDocument, Client, Contact, Lender, Property, ReportSnapshot } from "./types";
 
 const uid = (): string =>
   globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : `id-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -31,6 +31,15 @@ export const addProperty = (tenantId: string, input: { address: string } & Parti
 export const updateProperty = (tenantId: string, id: string, patch: Partial<Property>): Promise<Property | null> =>
   getRepository().update<Property>("properties", tenantId, id, patch);
 export const removeProperty = (tenantId: string, id: string): Promise<boolean> => getRepository().remove("properties", tenantId, id);
+
+// --- Lenders (lender / bank products for serviceability) ---
+export const listLenders = (tenantId: string): Promise<Lender[]> => getRepository().list<Lender>("lenders", tenantId);
+export const getLender = (tenantId: string, id: string): Promise<Lender | null> => getRepository().get<Lender>("lenders", tenantId, id);
+export const addLender = (tenantId: string, input: { name: string } & Partial<Lender>): Promise<Lender> =>
+  getRepository().create<Lender>("lenders", { ...input, id: uid(), tenantId, createdAt: nowISO() } as Lender);
+export const updateLender = (tenantId: string, id: string, patch: Partial<Lender>): Promise<Lender | null> =>
+  getRepository().update<Lender>("lenders", tenantId, id, patch);
+export const removeLender = (tenantId: string, id: string): Promise<boolean> => getRepository().remove("lenders", tenantId, id);
 
 // --- Report snapshots (saved modelling runs on a client's file; append-only) ---
 export const listReportSnapshots = (tenantId: string): Promise<ReportSnapshot[]> =>

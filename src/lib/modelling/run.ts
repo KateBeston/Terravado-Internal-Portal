@@ -33,6 +33,9 @@ export interface ModelInputs {
   // acquisition costs, depreciation and capex. Unset fields fall back to the
   // engine's standard assumptions, so the simple run is unchanged.
   modelling?: PropertyModelling;
+  // Optional lender products to assess against (from the tenant's manual lender
+  // setup). When absent the built-in templates are used.
+  lenders?: any[];
 }
 
 export interface ProjectionRow {
@@ -48,6 +51,8 @@ interface Core {
 /** Build the engine context from inputs and run projection + serviceability + verdict. */
 function core(inp: ModelInputs): Core {
   const ctx = seedContext();
+  // Use the tenant's lender products when supplied, else the built-in templates.
+  if (inp.lenders && inp.lenders.length) ctx.lenders = inp.lenders as any;
   const p = ctx.properties[0] as any;
   const client = ctx.clients[0] as any;
   const lender = (ctx.lenders[1] ?? ctx.lenders[0]) as any;
@@ -210,6 +215,33 @@ export function runLenderCompare(inp: ModelInputs): { loanRequired: number; rows
   const best = rows.find((r) => r.pass);
   if (best) best.bestFit = true;
   return { loanRequired, rows };
+}
+
+/* ---- Borrowing capacity across lenders for a bare client position (Finance
+   page). No property/purchase — just "how much can they borrow" per lender. ---- */
+export interface PositionInput {
+  grossIncome: number; partnerIncome?: number; livingExpMonthly?: number; dependants?: number;
+  monthlyCommitments?: number; cardLimits?: number; hecsBalance?: number; rentalIncomeAnnual?: number;
+}
+export interface LenderCapacityRow { name: string; capacity: number; maxDTI: number; maxLVR: number; }
+
+export function assessPosition(pos: PositionInput, lenders?: any[]): LenderCapacityRow[] {
+  const ctx = seedContext();
+  if (lenders && lenders.length) ctx.lenders = lenders as any;
+  const client = ctx.clients[0] as any;
+  client.income.base = pos.grossIncome;
+  if (pos.partnerIncome !== undefined) client.partner.base = pos.partnerIncome;
+  if (pos.livingExpMonthly !== undefined) client.livingExpMonthly = pos.livingExpMonthly;
+  if (pos.dependants !== undefined) client.dependants = pos.dependants;
+  const liab: any[] = [];
+  if (pos.cardLimits) liab.push({ id: "c", type: "Credit card", limit: pos.cardLimits, balance: 0, repayment: 0 });
+  if (pos.hecsBalance) liab.push({ id: "h", type: "HECS/HELP", limit: 0, balance: pos.hecsBalance, repayment: 0 });
+  if (pos.monthlyCommitments) liab.push({ id: "o", type: "Personal loan", limit: 0, balance: 0, repayment: pos.monthlyCommitments });
+  if (liab.length) client.liabilities = liab;
+  return (ctx.lenders as any[]).map((lender) => {
+    const sv = serviceability(client, lender, { proposedLoan: 0, newAnnualRent: pos.rentalIncomeAnnual ?? 0 }, ctx) as any;
+    return { name: lender.name, capacity: sv.capacity, maxDTI: lender.maxDTI, maxLVR: lender.maxLVR };
+  }).sort((a, b) => b.capacity - a.capacity);
 }
 
 export function runStressTest(base: ModelInputs): StressTest {

@@ -114,6 +114,32 @@ export interface ReportSnapshot extends Entity {
   provenance?: { label?: string };
 }
 
+/* A lender / bank product's serviceability policy — the parameters the engine
+   assesses borrowing capacity with. Manually set up per product, or (later)
+   supplied live by Quickli. */
+export interface LenderPolicy {
+  // Assessment rate
+  bufferPct?: number; floorPct?: number; varRate?: number; ioLoading?: number;
+  // Income shading (%)
+  rentShadePct?: number; otShadePct?: number; bonusShadePct?: number; commissionShadePct?: number; selfEmpShadePct?: number;
+  ngAddBack?: boolean;
+  // Living expenses (HEM)
+  hemMonthly?: number; hemPerDependant?: number; hemIncomeScale?: number;
+  // Debts
+  cardAssessPct?: number; hecsAssessed?: boolean; existingDebtAssess?: string;
+  // Caps
+  maxLVR?: number; maxDTI?: number;
+  // Fees
+  estFee?: number; valFee?: number; annualFee?: number; lmiFactor?: number;
+}
+
+export interface Lender extends Entity {
+  name: string;
+  kind?: string;
+  active?: boolean;
+  policy?: LenderPolicy;
+}
+
 export type BusinessDocStatus = "active" | "draft" | "archived";
 
 export interface BusinessDocument extends Entity {

@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
-import { listClients, getClient, listReportSnapshots, listProperties, getProperty } from "@/lib/domain/service";
+import { listClients, getClient, listReportSnapshots, listProperties, getProperty, listLenders } from "@/lib/domain/service";
 import { saveClientFinancesAction, saveRunAction } from "@/app/actions";
 import { runModel, runScenarios, runStressTest, runLenderCompare, type ModelInputs } from "@/lib/modelling/run";
 
@@ -26,6 +26,12 @@ export default async function ModellerPage({ searchParams }: { searchParams: Rec
   const { tenantId } = await getCurrentTenant();
   const clients = await listClients(tenantId);
   const properties = await listProperties(tenantId);
+
+  // The tenant's active lender products (manual setup) drive the comparison;
+  // the engine falls back to built-in templates when none are set up.
+  const engineLenders = (await listLenders(tenantId))
+    .filter((l) => l.active !== false)
+    .map((l) => ({ id: l.id, name: l.name, isTemplate: false, ...(l.policy ?? {}) }));
 
   // Selected client (if any) and their stored financial position.
   const clientId = asStr(searchParams.clientId, "");
@@ -68,6 +74,7 @@ export default async function ModellerPage({ searchParams }: { searchParams: Rec
   const inputs: ModelInputs = {
     ...property,
     grossIncome,
+    ...(engineLenders.length ? { lenders: engineLenders } : {}),
     ...(selProp ? { modelling: pd.modelling } : {}),
     ...(client ? { clientName: client.name, ...pos } : {}),
   };

@@ -6,6 +6,7 @@ const LINKS: [string, string][] = [
   ["/", "Dashboard"],
   ["/modeller", "Modeller"],
   ["/workspace", "Workspace"],
+  ["/lenders", "Lenders"],
   ["/clients", "Clients"],
   ["/contacts", "Contacts"],
   ["/properties", "Properties"],
