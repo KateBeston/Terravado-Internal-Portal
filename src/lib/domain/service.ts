@@ -44,7 +44,11 @@ export const addReportSnapshot = (
 // --- Business documents (business development log) ---
 export const listBusinessDocs = (tenantId: string): Promise<BusinessDocument[]> =>
   getRepository().list<BusinessDocument>("business_documents", tenantId);
+export const getBusinessDoc = (tenantId: string, id: string): Promise<BusinessDocument | null> =>
+  getRepository().get<BusinessDocument>("business_documents", tenantId, id);
 export const addBusinessDoc = (tenantId: string, input: { title: string } & Partial<BusinessDocument>): Promise<BusinessDocument> =>
   getRepository().create<BusinessDocument>("business_documents", { ...input, id: uid(), tenantId, createdAt: nowISO() } as BusinessDocument);
+export const updateBusinessDoc = (tenantId: string, id: string, patch: Partial<BusinessDocument>): Promise<BusinessDocument | null> =>
+  getRepository().update<BusinessDocument>("business_documents", tenantId, id, patch);
 export const removeBusinessDoc = (tenantId: string, id: string): Promise<boolean> =>
   getRepository().remove("business_documents", tenantId, id);

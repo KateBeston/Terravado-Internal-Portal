@@ -278,7 +278,22 @@ export async function createBusinessDocAction(fd: FormData) {
     summary: s(fd, "summary"),
     status: (s(fd, "status") as BusinessDocStatus) ?? "active",
     link: s(fd, "link"),
+    content: s(fd, "content"),
   });
+  revalidatePath("/business");
+}
+export async function updateBusinessDocAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id");
+  if (!id) return;
+  await svc.updateBusinessDoc(tenantId, id, {
+    summary: s(fd, "summary"),
+    status: (s(fd, "status") as BusinessDocStatus) ?? undefined,
+    link: s(fd, "link"),
+    content: s(fd, "content"),
+  });
+  revalidatePath(`/business/${id}`);
   revalidatePath("/business");
 }
 export async function deleteBusinessDocAction(fd: FormData) {

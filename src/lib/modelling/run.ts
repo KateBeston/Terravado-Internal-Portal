@@ -189,6 +189,29 @@ export interface StressTest {
   verdict: string;
 }
 
+/* ---- Lender comparison — borrowing capacity across lender templates ---- */
+export interface LenderCompareRow {
+  name: string; capacity: number; dti: number; maxLVR: number; maxDTI: number;
+  pass: boolean; headroom: number; bestFit: boolean;
+}
+
+export function runLenderCompare(inp: ModelInputs): { loanRequired: number; rows: LenderCompareRow[] } {
+  const c = core(inp);
+  const annualRent = inp.weeklyRent * 52;
+  const loanRequired = c.P.acq.loan;
+  const rows: LenderCompareRow[] = (c.ctx.lenders as any[]).map((lender) => {
+    const sv = serviceability(c.ctx.clients[0], lender, { proposedLoan: loanRequired, newAnnualRent: annualRent }, c.ctx) as any;
+    return {
+      name: lender.name, capacity: sv.capacity, dti: sv.dti,
+      maxLVR: lender.maxLVR, maxDTI: lender.maxDTI, pass: sv.pass, headroom: sv.headroom, bestFit: false,
+    };
+  }).sort((a, b) => b.capacity - a.capacity);
+  // Best fit: the lender that serviceably lends the most against the required loan.
+  const best = rows.find((r) => r.pass);
+  if (best) best.bestFit = true;
+  return { loanRequired, rows };
+}
+
 export function runStressTest(base: ModelInputs): StressTest {
   const b = core(base);
   const stressed: ModelInputs = {

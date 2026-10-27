@@ -122,4 +122,5 @@ export interface BusinessDocument extends Entity {
   summary?: string;
   status?: BusinessDocStatus;
   link?: string;
+  content?: string;
 }

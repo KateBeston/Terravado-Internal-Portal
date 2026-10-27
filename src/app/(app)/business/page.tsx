@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
 import { listBusinessDocs } from "@/lib/domain/service";
 import { createBusinessDocAction, deleteBusinessDocAction } from "@/app/actions";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,7 @@ export default async function BusinessPage() {
             </label>
           </div>
           <label className="f"><span>Summary</span><textarea name="summary" rows={2} /></label>
+          <label className="f"><span>Content (optional — the full document, openable later)</span><textarea name="content" rows={5} placeholder="Paste or write the document body here…" /></label>
           <label className="f"><span>Link (optional)</span><input name="link" placeholder="https://…" /></label>
           <button className="btn" type="submit">Log it</button>
         </form>
@@ -41,8 +43,8 @@ export default async function BusinessPage() {
             {docs.map((d) => (
               <tr key={d.id}>
                 <td>
-                  <strong>{d.title}</strong>
-                  {d.link && <> · <a href={d.link} target="_blank" rel="noreferrer">open</a></>}
+                  <Link href={`/business/${d.id}`}><strong>{d.title}</strong></Link>
+                  {d.link && <> · <a href={d.link} target="_blank" rel="noreferrer">link</a></>}
                 </td>
                 <td>{d.category ?? "—"}</td>
                 <td className="muted">{d.summary ?? ""}</td>

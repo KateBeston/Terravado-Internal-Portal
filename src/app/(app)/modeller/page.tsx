@@ -2,7 +2,7 @@ import { requireUser } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
 import { listClients, getClient, listReportSnapshots, listProperties, getProperty } from "@/lib/domain/service";
 import { saveClientFinancesAction, saveRunAction } from "@/app/actions";
-import { runModel, runScenarios, runStressTest, type ModelInputs } from "@/lib/modelling/run";
+import { runModel, runScenarios, runStressTest, runLenderCompare, type ModelInputs } from "@/lib/modelling/run";
 
 export const dynamic = "force-dynamic";
 
@@ -75,6 +75,7 @@ export default async function ModellerPage({ searchParams }: { searchParams: Rec
   const r = runModel(inputs);
   const scenarios = runScenarios(inputs);
   const stress = runStressTest(inputs);
+  const lenders = runLenderCompare(inputs);
   const stressColour = stress.verdict === "Holds comfortably" ? "#1f6f54" : stress.verdict === "Tight" ? "#b8860b" : "#b03a2e";
 
   // Saved runs on this client's file (newest first from the repository).
@@ -248,6 +249,32 @@ export default async function ModellerPage({ searchParams }: { searchParams: Rec
         <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
           Assessed against {r.serviceability.lender}{client ? ` for ${client.name}` : ""}.
         </div>
+      </div>
+
+      {/* Lender comparison */}
+      <div className="panel">
+        <h2>Lender comparison — best-fit finance</h2>
+        <p className="muted" style={{ marginTop: -4, marginBottom: 12 }}>
+          Borrowing capacity for {client ? <strong>{client.name}</strong> : "this position"} across our lender templates,
+          for the {money(lenders.loanRequired)} loan this purchase needs.
+        </p>
+        <table>
+          <thead><tr><th>Lender template</th><th>Capacity</th><th>DTI (cap)</th><th>Max LVR</th><th>Verdict</th></tr></thead>
+          <tbody>
+            {lenders.rows.map((l) => (
+              <tr key={l.name} style={{ background: l.bestFit ? "var(--primary-tint)" : undefined }}>
+                <td className="lbl">{l.name}{l.bestFit && <span className="badge" style={{ marginLeft: 6 }}>Best fit</span>}</td>
+                <td>{money(l.capacity)}</td>
+                <td>{l.dti.toFixed(1)}× ({l.maxDTI}×)</td>
+                <td>{l.maxLVR}%</td>
+                <td style={{ color: l.pass ? "#1f6f54" : "#b03a2e" }}>{l.pass ? "Serviceable" : "Short"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>
+          Template lenders pending the live Quickli / lender-policy integration. Method recorded in The Business → “Lender comparison — methodology”.
+        </p>
       </div>
 
       {/* Monte Carlo */}
