@@ -2,6 +2,8 @@
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
+import { ACCOUNT_TYPES } from "@/lib/auth/capabilities";
+import { createClient } from "@/lib/supabase/server";
 import * as svc from "@/lib/domain/service";
 import type { BusinessDocStatus, PropertyStatus } from "@/lib/domain/types";
 import { runModel, runStressTest, type ModelInputs } from "@/lib/modelling/run";
@@ -581,6 +583,20 @@ export async function deleteCompanyAction(fd: FormData) {
   const { tenantId } = await getCurrentTenant();
   const id = s(fd, "id");
   if (id) { await svc.removeCompany(tenantId, id); revalidatePath("/companies"); }
+}
+
+// --- Account settings ---
+export async function updateAccountTypeAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const accountType = s(fd, "accountType");
+  if (!tenantId || !accountType) return;
+  if (!ACCOUNT_TYPES.some((t) => t.value === accountType)) return; // only known types
+  const sb = createClient();
+  // RLS (tenants_update) restricts this to owners/admins of the tenant.
+  await sb.from("tenants").update({ account_type: accountType }).eq("id", tenantId);
+  revalidatePath("/", "layout");
+  revalidatePath("/account");
 }
 
 // --- Ownership entities ---

@@ -1,25 +1,30 @@
-feat(integrations): bank-data (Open Banking consumer data) seam — built and ready, gated off
+feat(account): account types + capability gating (layer 1 of the account model)
 
 INTERNAL PORTAL.
 
-Adds the CONSUMER side of open banking as a provider seam, in the same bucket as
-the other integrations (config-gated, stub fallback), ready to wire a live
-provider later:
+First layer of the account model: an account (tenant) now has a TYPE that grants
+a set of capabilities, and the portal gates features on those capabilities.
 
-- src/lib/integrations/bank-data — BankDataProvider seam: startConnection (hosted
-  consent) + getSnapshot (assessment-ready income/liability/living-expense data
-  shaped to drop into a person's Financials record). Fallback "none" keeps the
-  record on client-supplied statements + manual entry; a scaffolded intermediary
-  provider throws a clear "build sandbox / go live via representative" message.
-- Gated on BANK_DATA_PROVIDER (frollo|basiq|illion) + BANK_DATA_MODE
-  (sandbox|live). Sandbox needs no accreditation and no real data; live needs the
-  accredited-intermediary representative arrangement.
-- Registered in the integration registry, so it shows on the Integrations page
-  with its status, fallback, what it enables and how to connect.
-- .env.example documents the vars.
+- Account types: Mortgage broker, Investment consultant, Buyers agent, Public /
+  end investor. Core (modeller, portfolio, clients, properties, entities) is
+  shared; the type adds/removes lenders, finance, lodgement, bank data, deal
+  export, integrations and The Business.
+- lib/auth/capabilities — the capability matrix + helpers (capabilitiesFor, can,
+  labels). Features are gated on CAPABILITIES and the type grants them, so a
+  consultant who later adds a broker to the team can be granted broker
+  capabilities without rewriting checks.
+- Nav is filtered by capability; a new Account page (/account) shows the account
+  type, lets an owner/admin change it, and lists what each type enables.
+- current_tenant() now returns account_type; getCurrentTenant surfaces it.
 
-Distinct from the existing bank-PRODUCTS seam (public product reference data, no
-consent). Nothing is live; this only makes the surface ready.
+Migration 0013 (applied): tenants.account_type (default 'broker', so existing
+accounts keep full capability); owner/admin tenants_update RLS policy;
+current_tenant() rebuilt to return the type.
+
+Next layers (separate increments): internal role refinements (broker-on-team),
+then external guest deal-sharing (cross-tenant, scoped — built last and
+carefully). Note: this layer gates the NAV; per-page capability enforcement
+lands with the sharing increment.
 
 Verified: tsc --noEmit clean · verify:engine 20/20 · next build green.
 
