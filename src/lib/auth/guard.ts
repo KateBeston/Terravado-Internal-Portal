@@ -17,3 +17,10 @@ export async function requireCapability(cap: Capability): Promise<void> {
   const [tenant, roles] = await Promise.all([getCurrentTenant(), getTenantRoles()]);
   if (!effectiveCapabilities(tenant.accountType, roles).includes(cap)) redirect("/account");
 }
+
+/** Require the signed-in user to be a platform admin (internal Terravado team),
+    else send home. Gates the admin console. */
+export async function requirePlatformAdmin(): Promise<void> {
+  const { getIsPlatformAdmin } = await import("./admin");
+  if (!(await getIsPlatformAdmin())) redirect("/");
+}

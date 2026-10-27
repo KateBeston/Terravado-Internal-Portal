@@ -1,32 +1,37 @@
-feat(account): team roles — broker-on-a-team unlocks broker features + per-page enforcement (layer 2)
+feat(sharing): external guest deal-sharing — invite onto one deal, view-only, cross-tenant scoped (final layer)
 
 INTERNAL PORTAL.
 
-Layer 2 of the account model: team roles and team-aware capabilities.
+The final account-model layer: an account can invite an external party onto a
+SINGLE deal (a person/client record + its properties, modelling and documents).
+The guest sees only that deal — never the host's book.
 
-- Adds the 'broker' team role (alongside owner/admin/adviser/viewer). A member
-  with the Broker role grants the broker toolset (lender compare, finance, bank
-  data, lodgement, deal export) to the WHOLE account — so a consultant who adds a
-  broker to the team unlocks broker features without changing their account type.
-- effectiveCapabilities(type, roles) = account-type capabilities UNION the
-  capabilities granted by the team's roles. The nav and pages use this.
-- Per-page enforcement: /lenders, /finance and /lodgements now call
-  requireCapability() and redirect to /account if the capability is absent — so
-  gating is real, not just nav-hiding.
-- Account page gains a Team panel: lists members (with emails), lets an
-  owner/admin change a member's role, and shows the account's effective
-  capabilities (flagging when a broker on the team is the reason a feature is on).
+- deal_shares: host_tenant_id, client_id, invited_email, permission (view |
+  collaborate), status (invited | accepted | revoked), token. RLS: the host
+  manages its own shares; the invited email can see shares addressed to them.
+- Guest read access via SEPARATE *_shared_select policies on contacts,
+  properties, report_snapshots, documents and lodgements — SELECT only, scoped
+  to shared_client_ids() (accepted shares for the current user by user-id or
+  email). Host write access is untouched; guests cannot write.
+- accept_deal_share(token) RPC: only the invited email may accept; sets the
+  share accepted and binds it to the user.
+- Host UI: a Sharing tab on the person record — invite by email, see shares,
+  copy the invite link, revoke (cuts access immediately).
+- Guest UI: /invite/[token] to accept, /shared to list deals shared with me, and
+  /shared/[clientId] a read-only deal view (serviceability snapshot, properties,
+  modelling runs). "Shared with me" added to the nav.
 
-Migration 0014 (applied): extends the memberships role check to include
-'broker'; adds a memberships_update RLS policy for owners/admins (via a
-non-recursive current_user_admin_tenants() helper); adds SECURITY DEFINER
-functions tenant_members() (team + emails, scoped to the caller's tenant) and
-current_tenant_roles() (drives team-aware capabilities).
+Migration 0016 (applied): deal_shares (+RLS, indexes), shared_client_ids() and
+accept_deal_share() functions, and the five guest *_shared_select policies.
 
-Next (final layer, built deliberately): external guest deal-sharing —
-cross-tenant, deal-scoped, with invite/accept and scoped RLS.
+RLS audit done alongside: every table has RLS enabled; all core data tables are
+tenant-scoped via current_user_tenants() (no permissive 'true'); platform_admins
+is deny-by-default (reached only via guarded functions). Sharing is view-only in
+this version; collaborate (scoped write) and brand-new-user invites are the next
+step.
 
-Verified: tsc --noEmit clean · verify:engine 20/20 · next build green.
+Verified: tsc --noEmit clean · verify:engine 20/20 · next build green ·
+sharing policies confirmed SELECT-only and scoped.
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV

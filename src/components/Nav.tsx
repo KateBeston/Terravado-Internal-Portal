@@ -17,12 +17,13 @@ const LINKS: [string, string, string?][] = [
   ["/lodgements", "Lodgements", "lodgement"],
   ["/integrations", "Integrations", "integrations"],
   ["/business", "The Business", "business"],
+  ["/shared", "Shared with me"],
   ["/account", "Account"],
 ];
 
 interface NavUser { name: string; email: string; isDev: boolean; }
 
-export default function Nav({ user, recordId, caps, engineVersion, taxVersion }: { user: NavUser | null; recordId?: string | null; caps?: string[]; engineVersion: string; taxVersion: string; }) {
+export default function Nav({ user, recordId, caps, isAdmin, engineVersion, taxVersion }: { user: NavUser | null; recordId?: string | null; caps?: string[]; isAdmin?: boolean; engineVersion: string; taxVersion: string; }) {
   const path = usePathname();
   const active = (href: string) => (href === "/" ? path === "/" : path.startsWith(href));
   const allowed = (cap?: string) => !cap || !caps || caps.includes(cap);
@@ -38,6 +39,11 @@ export default function Nav({ user, recordId, caps, engineVersion, taxVersion }:
           {label}
         </Link>
       ))}
+      {isAdmin && (
+        <Link href="/admin" className={`link${active("/admin") ? " on" : ""}`} style={{ color: "#e0b050" }}>
+          Admin
+        </Link>
+      )}
       <div className="spacer" />
       {user && (
         <div className="who">

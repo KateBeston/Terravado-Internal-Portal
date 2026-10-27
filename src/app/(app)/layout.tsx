@@ -2,13 +2,14 @@ import Nav from "@/components/Nav";
 import { getUser } from "@/lib/auth/session";
 import { getCurrentTenant, getTenantRoles } from "@/lib/auth/tenant";
 import { effectiveCapabilities } from "@/lib/auth/capabilities";
+import { getIsPlatformAdmin } from "@/lib/auth/admin";
 import { listContacts } from "@/lib/domain/service";
 import { ENGINE_VERSION, TAX_DATA } from "@/lib/engine/tax-data";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getUser();
   const tenant = await getCurrentTenant();
-  const roles = await getTenantRoles();
+  const [roles, isAdmin] = await Promise.all([getTenantRoles(), getIsPlatformAdmin()]);
   const caps = effectiveCapabilities(tenant.accountType, roles);
 
   // Resolve the signed-in user's own person record (by email) so their name in
@@ -29,6 +30,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         user={user ? { name: user.name, email: user.email, isDev: user.isDev } : null}
         recordId={recordId}
         caps={caps}
+        isAdmin={isAdmin}
         engineVersion={ENGINE_VERSION}
         taxVersion={TAX_DATA.version}
       />

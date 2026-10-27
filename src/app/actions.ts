@@ -4,6 +4,8 @@ import { requireUser } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
 import { ACCOUNT_TYPES, TEAM_ROLES } from "@/lib/auth/capabilities";
 import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/auth/session";
+import { redirect } from "next/navigation";
 import * as svc from "@/lib/domain/service";
 import type { BusinessDocStatus, PropertyStatus } from "@/lib/domain/types";
 import { runModel, runStressTest, type ModelInputs } from "@/lib/modelling/run";
@@ -610,6 +612,74 @@ export async function updateMemberRoleAction(fd: FormData) {
   await sb.from("memberships").update({ role }).eq("tenant_id", tenantId).eq("user_id", userId);
   revalidatePath("/", "layout");
   revalidatePath("/account");
+}
+
+// --- Platform admin (internal Terravado team) — all RPCs re-check admin server-side ---
+export async function adminSetAccountTypeAction(fd: FormData) {
+  await requireUser();
+  const tenant = s(fd, "tenantId");
+  const type = s(fd, "accountType");
+  if (!tenant || !type) return;
+  const sb = createClient();
+  await sb.rpc("admin_set_account_type", { p_tenant: tenant, p_type: type });
+  revalidatePath("/admin"); revalidatePath(`/admin/${tenant}`); revalidatePath("/", "layout");
+}
+export async function adminSetMemberRoleAction(fd: FormData) {
+  await requireUser();
+  const tenant = s(fd, "tenantId");
+  const userId = s(fd, "userId");
+  const role = s(fd, "role");
+  if (!tenant || !userId || !role) return;
+  const sb = createClient();
+  await sb.rpc("admin_set_member_role", { p_tenant: tenant, p_user: userId, p_role: role });
+  revalidatePath(`/admin/${tenant}`); revalidatePath("/", "layout");
+}
+export async function adminAddMemberAction(fd: FormData) {
+  await requireUser();
+  const tenant = s(fd, "tenantId");
+  const userId = s(fd, "userId");
+  const role = s(fd, "role") ?? "viewer";
+  if (!tenant || !userId) return;
+  const sb = createClient();
+  await sb.rpc("admin_add_member", { p_tenant: tenant, p_user: userId, p_role: role });
+  revalidatePath(`/admin/${tenant}`);
+}
+
+// --- Deal sharing (external guests) ---
+export async function createShareAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const user = await getUser();
+  const clientId = s(fd, "clientId");
+  const email = s(fd, "invitedEmail");
+  const permission = s(fd, "permission") ?? "view";
+  if (!tenantId || !clientId || !email) return;
+  const token = (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`).replace(/-/g, "");
+  const sb = createClient();
+  // RLS (deal_shares_host) restricts inserts to the caller's tenant.
+  await sb.from("deal_shares").insert({
+    host_tenant_id: tenantId, client_id: clientId, invited_email: email.toLowerCase(),
+    permission, status: "invited", token, created_by: user?.id ?? null,
+  });
+  revalidatePath(`/contacts/${clientId}/sharing`);
+}
+export async function revokeShareAction(fd: FormData) {
+  await requireUser();
+  const id = s(fd, "id");
+  const clientId = s(fd, "clientId");
+  if (!id) return;
+  const sb = createClient();
+  await sb.from("deal_shares").update({ status: "revoked" }).eq("id", id);
+  if (clientId) revalidatePath(`/contacts/${clientId}/sharing`);
+}
+export async function acceptShareAction(fd: FormData) {
+  await requireUser();
+  const token = s(fd, "token");
+  if (!token) return;
+  const sb = createClient();
+  const { data, error } = await sb.rpc("accept_deal_share", { p_token: token });
+  if (error) redirect("/shared?error=1");
+  redirect(data ? `/shared/${data}` : "/shared");
 }
 
 // --- Ownership entities ---
