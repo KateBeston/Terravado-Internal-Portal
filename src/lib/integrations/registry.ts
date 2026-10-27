@@ -6,6 +6,7 @@ import { CORELOGIC_CONFIGURED } from "./property-data/corelogic";
 import { SIMPOLOGY_CONFIGURED, NEXTGEN_CONFIGURED } from "./lodgement";
 import { DOMAIN_CONFIGURED } from "./listings";
 import { CDR_CONFIGURED } from "./bank-products";
+import { BANK_DATA_CONFIGURED } from "./bank-data";
 import { GOOGLE_MAPS_CONFIGURED } from "./maps";
 
 export interface IntegrationStatus {
@@ -55,6 +56,13 @@ export function integrationStatuses(): IntegrationStatus[] {
       fallback: "Manually-entered lender rates & fees",
       enables: "Auto-refresh lender rates & fees from banks",
       access: "Public CDR Product APIs — no paid key; build the poller",
+    },
+    {
+      key: "bankdata", label: "Bank data (Open Banking)", category: "Client bank data / verification",
+      configured: BANK_DATA_CONFIGURED, envVar: "BANK_DATA_PROVIDER",
+      fallback: "Client-supplied statements + manual entry",
+      enables: "Verified income, living expenses & liabilities straight into the client's Financials record",
+      access: "Accredited CDR intermediary (Frollo/Basiq/illion), representative model; build on sandbox first, live needs the representative arrangement",
     },
     {
       key: "simpology", label: "Simpology", category: "Lodgement",

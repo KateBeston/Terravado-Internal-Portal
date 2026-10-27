@@ -1,28 +1,27 @@
-feat(engine): assess serviceability from the detailed income & liability lines
+feat(integrations): bank-data (Open Banking consumer data) seam — built and ready, gated off
 
 INTERNAL PORTAL.
 
-The Modeller and deal pack now derive the assessment figures from a person's
-detailed Financials record instead of only the manual summary:
+Adds the CONSUMER side of open banking as a provider seam, in the same bucket as
+the other integrations (config-gated, stub fallback), ready to wire a live
+provider later:
 
-- deriveAssessableFinances() collapses the structured lines into the summary
-  the engine already consumes, so the engine math (and its 20 assurance checks)
-  is unchanged — only the inputs are better.
-- Income by owner: Applicant + Joint lines total to gross income, Partner lines
-  to partner income; each line annualised by its frequency. Self-employed lines
-  average the latest and prior year when a prior year is given, plus add-backs.
-  Income is fed at gross — lender-specific shading stays in the lender policy
-  layer, so nothing is double-counted.
-- Liabilities: credit-card limits, HECS-HELP balances and other repayments
-  (annualised to monthly) are summed from the liability lines.
-- When the structured lists are present they are authoritative; otherwise the
-  stored summary fields are used as-is. The Modeller still lets you override any
-  figure on the form.
+- src/lib/integrations/bank-data — BankDataProvider seam: startConnection (hosted
+  consent) + getSnapshot (assessment-ready income/liability/living-expense data
+  shaped to drop into a person's Financials record). Fallback "none" keeps the
+  record on client-supplied statements + manual entry; a scaffolded intermediary
+  provider throws a clear "build sandbox / go live via representative" message.
+- Gated on BANK_DATA_PROVIDER (frollo|basiq|illion) + BANK_DATA_MODE
+  (sandbox|live). Sandbox needs no accreditation and no real data; live needs the
+  accredited-intermediary representative arrangement.
+- Registered in the integration registry, so it shows on the Integrations page
+  with its status, fallback, what it enables and how to connect.
+- .env.example documents the vars.
 
-Wired into the Modeller (contacts[].finances) and the deal pack.
+Distinct from the existing bank-PRODUCTS seam (public product reference data, no
+consent). Nothing is live; this only makes the surface ready.
 
-Verified: tsc --noEmit clean · verify:engine 20/20 · next build green ·
-derivation arithmetic spot-checked.
+Verified: tsc --noEmit clean · verify:engine 20/20 · next build green.
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV
