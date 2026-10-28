@@ -1,38 +1,32 @@
-Port land-tax aggregation into the portfolio (INTERNAL-PORTAL)
+Port the equity chain into the portal (INTERNAL-PORTAL)
 
-The retired Workspace demo showed land tax assessed the way the revenue offices
-actually do it — aggregated per state and per owning entity, threshold applied
-once — against the naive standalone sum. The real portfolio had only a
-placeholder ("combined land-tax aggregation is a later refinement"). This ports
-it in, backed by persisted land values.
+The last of the three features out of the retired Workspace. Models when a
+client can fund their NEXT acquisition: usable equity across the owned
+portfolio projected forward (the equity test) against the lender's capacity for
+the new loan (the serviceability test), naming the blocker — "equity without
+capacity is not a purchase".
 
 What's new
-- aggregateLandTax() — a pure, tested helper (src/lib/engine/landtax.ts) that
-  groups holdings by state x owning entity, applies the threshold once to the
-  group, and apportions the liability back by land-value share. Reuses the
-  engine's COUNTRIES.AU.landTax schedule.
-- Portfolio page: an "Aggregation effect" banner (standalone vs aggregated and
-  the annual cost of the difference), a per-group breakdown (property, land
-  value, share, apportioned tax, if-assessed-alone, aggregate row), and an
-  excluded list (PPORs and holdings with no land value).
-- "Land tax inputs" editor on the portfolio: set each property's unimproved
-  land value (from the land-tax/rates notice, not the price) and a PPOR flag,
-  saved in one go (saveLandTaxInputsAction) to the property's details.tax.
-- PropertyTax type added to PropertyDetails (landValueManual, isPPOR). No DB
-  migration — it lives in the existing properties.details jsonb.
+- runEquityChain() bridge (src/lib/modelling/run.ts) — assembles a modeller
+  context from the client's owned holdings (via dealInputs/core) and drives the
+  engine's equityChain(). No new engine maths; reuses the verified function.
+- /equity page (gated on the "portfolio" capability) — client selector,
+  next-acquisition inputs (target price, deposit, costs, release LVR, yield,
+  horizon, lender), go-year / equity-ready / serviceability KPIs, the blocker
+  warning, and the year-by-year table (usable equity vs cash needed, capacity,
+  DTI, and whether both tests pass).
+- Nav entry next to Portfolio.
 
-Honesty notes
-- Land values are entered, never derived from price (an unimproved land value
-  is not a fixed fraction of purchase price).
-- NSW-trust no-threshold surcharge and foreign surcharge are FLAGGED, not
-  computed: the persisted entity does not record the deed's foreign-person
-  exclusion or foreign status, so a surcharge figure would be fabricated.
+Notes
+- Inputs are transient planning params carried in the query string, not
+  persisted — the chain is a what-if.
+- Equity is projected from each owned property's modelling assumptions (same
+  basis as the Modeller); only properties marked "owned" are recycled.
 
 Verification
 - tsc --noEmit clean
-- npm run verify:engine — 21/21 (new known-answer: two NSW $800k holdings under
-  one entity = $8,500 aggregated vs $0 standalone)
-- npm run build — /portfolio builds
+- npm run verify:engine — 21/21
+- npm run build — /equity builds
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV

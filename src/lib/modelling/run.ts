@@ -4,7 +4,7 @@
    returns structured results for the Modeller page. Built on the verified seed
    context with the key fields overridden from the inputs. */
 import { seedContext } from "@/lib/engine/seeds";
-import { project, monteCarlo, serviceability, verdictOf } from "@/lib/engine/engine";
+import { project, monteCarlo, serviceability, verdictOf, equityChain } from "@/lib/engine/engine";
 import { provenance } from "@/lib/assurance/provenance";
 import type { PropertyModelling } from "@/lib/domain/types";
 
@@ -242,6 +242,32 @@ export function assessPosition(pos: PositionInput, lenders?: any[]): LenderCapac
     const sv = serviceability(client, lender, { proposedLoan: 0, newAnnualRent: pos.rentalIncomeAnnual ?? 0 }, ctx) as any;
     return { name: lender.name, capacity: sv.capacity, maxDTI: lender.maxDTI, maxLVR: lender.maxLVR };
   }).sort((a, b) => b.capacity - a.capacity);
+}
+
+/* ---- Equity chain — equity recycling constrained by serviceability ----
+   Models when the client can fund the NEXT acquisition: usable equity across
+   the existing owned portfolio projected forward (the equity test) AND the
+   lender's capacity for the new loan (the serviceability test). It names the
+   blocker — "equity without capacity is not a purchase". Built on the engine's
+   equityChain, with the modeller context assembled from the client's owned
+   holdings. Pass each owned property's ModelInputs (via dealInputs) plus a base
+   ModelInputs carrying the client's position (use an owned property's inputs,
+   or a placeholder when the client owns nothing yet). */
+export interface EquityChainCfg {
+  targetPrice: number; depositPct: number; costsPct: number; targetLVR: number;
+  horizon: number; rentYield: number; lenderId?: string;
+}
+
+export function runEquityChain(base: ModelInputs, ownedInputs: ModelInputs[], cfg: EquityChainCfg) {
+  const root = core(base);
+  const ctx = root.ctx;
+  ctx.clients = [root.ctx.clients[0]];
+  ctx.properties = ownedInputs.map((inp) => { const c = core(inp); c.p.status = "Owned"; return c.p; });
+  return equityChain({
+    targetPrice: cfg.targetPrice, depositPct: cfg.depositPct, costsPct: cfg.costsPct,
+    targetLVR: cfg.targetLVR, horizon: cfg.horizon, rentYield: cfg.rentYield,
+    clientId: ctx.clients[0].id, lenderId: cfg.lenderId ?? ctx.lenders[0]?.id,
+  }, ctx);
 }
 
 export function runStressTest(base: ModelInputs): StressTest {
