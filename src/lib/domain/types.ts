@@ -155,6 +155,8 @@ export interface OwnershipEntity extends Entity {
   email?: string;
   website?: string;
   notes?: string;
+  foreign?: boolean;            // foreign person/entity — drives land-tax & duty surcharges
+  deedExcludesForeign?: boolean; // trust deed irrevocably excludes foreign persons (avoids the NSW trust surcharge)
 }
 
 /* A person's membership of an entity, carrying their role (director, trustee,

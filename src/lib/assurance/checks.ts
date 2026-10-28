@@ -10,7 +10,7 @@
    figure still matches the live source, since real rates and policies move.
    =========================================================================== */
 
-import { TAX_DATA, medicareLevy, medicareLevySurcharge, division293 } from "../engine/tax-data";
+import { TAX_DATA, medicareLevy, medicareLevySurcharge, division293, vicVacantResidentialLandTax } from "../engine/tax-data";
 import { aggregateLandTax } from "../engine/landtax";
 import { modelDepreciation } from "../engine/depreciation";
 import { disposalCgt } from "../engine/cgt";
@@ -73,9 +73,15 @@ const referenceChecks: CheckDef[] = [
   ref("landtax-nsw-threshold", "Land tax", "NSW land tax at $1,075,000 threshold is nil", "Revenue NSW — land tax", 0, () => TAX_DATA.landTax.NSW(1075000)),
   ref("landtax-aggregation-effect", "Land tax", "Two NSW $800k holdings under one entity: $8,500 aggregated vs $0 standalone", "Revenue NSW — land tax aggregation",
     8500, () => aggregateLandTax([
-      { id: "a", label: "A", region: "NSW", landValue: 800000, ownerKey: "e1", ownerName: "Trust", ownerKind: "Trust" },
-      { id: "b", label: "B", region: "NSW", landValue: 800000, ownerKey: "e1", ownerName: "Trust", ownerKind: "Trust" },
+      { id: "a", label: "A", region: "NSW", landValue: 800000, ownerKey: "e1", ownerName: "Trust", ownerKind: "Trust", deedExcludesForeign: true },
+      { id: "b", label: "B", region: "NSW", landValue: 800000, ownerKey: "e1", ownerName: "Trust", ownerKind: "Trust", deedExcludesForeign: true },
     ]).totalAggregated),
+  ref("landtax-nsw-trust-surcharge", "Land tax", "NSW trust (no foreign-exclusion deed) on $1m: $16,000 no-threshold surcharge", "Revenue NSW — trust land tax",
+    16000, () => aggregateLandTax([{ id: "t", label: "T", region: "NSW", landValue: 1000000, ownerKey: "tr", ownerName: "Trust", ownerKind: "Trust" }]).totalAggregated),
+  ref("landtax-foreign-surcharge", "Land tax", "Foreign owner, NSW $1m land: $50,000 surcharge (5%)", "Revenue NSW — foreign owner surcharge",
+    50000, () => aggregateLandTax([{ id: "f", label: "F", region: "NSW", landValue: 1000000, ownerKey: "fo", ownerName: "Foreign Co", ownerKind: "Company", foreign: true }]).totalAggregated),
+  ref("vic-vrlt-y1", "Land tax", "VIC Vacant Residential Land Tax: $800k CIV, year 1 → $8,000 (1%)", "SRO Victoria — VRLT",
+    8000, () => vicVacantResidentialLandTax(800000, 1)),
   ref("dep-div43-2_5pct", "Depreciation", "Div 43 capital works: $320k construction, post-1987 → $8,000 year 1", "ATO — Div 43 capital works (2.5% p.a.)",
     8000, () => modelDepreciation({ mode: "assumed", constructionCost: 320000, buildYear: 2015 }, 1).rows[0].div43),
   ref("dep-div40-dv-y1", "Depreciation", "Div 40 diminishing value: $5,000 asset, 10-yr life → $1,000 year 1", "ATO — Div 40 diminishing value (200%/life)",

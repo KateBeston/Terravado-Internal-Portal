@@ -48,6 +48,14 @@ export function division293(incomePlusContributions: number, concessionalContrib
   return 0.15 * Math.min(Math.max(0, concessionalContributions), over);
 }
 
+/** VIC Vacant Residential Land Tax — escalating 1% / 2% / 3% of capital improved
+    value by consecutive vacant year, for residential land vacant 6+ months
+    (statewide from 1 Jan 2025). Separate from general land tax. */
+export function vicVacantResidentialLandTax(capitalImprovedValue: number, consecutiveVacantYears: number): number {
+  const rate = consecutiveVacantYears <= 1 ? 0.01 : consecutiveVacantYears === 2 ? 0.02 : 0.03;
+  return rate * Math.max(0, capitalImprovedValue);
+}
+
 export interface TaxData {
   version: string;
   effectiveFrom: string;

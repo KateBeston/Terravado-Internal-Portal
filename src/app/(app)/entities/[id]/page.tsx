@@ -43,6 +43,19 @@ export default async function EntityDetailsTab({ params }: { params: { id: strin
         </div>
 
         <div className="panel">
+          <h2>Land-tax status</h2>
+          <label className="f" style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <input type="checkbox" name="foreign" defaultChecked={e.foreign ?? false} style={{ width: "auto" }} />
+            <span style={{ margin: 0 }}>Foreign person / entity — applies the state land-tax (and duty) surcharge</span>
+          </label>
+          <label className="f" style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <input type="checkbox" name="deedExcludesForeign" defaultChecked={e.deedExcludesForeign ?? false} style={{ width: "auto" }} />
+            <span style={{ margin: 0 }}>Trust deed irrevocably excludes foreign persons — avoids the NSW trust no-threshold surcharge</span>
+          </label>
+          <p className="muted" style={{ fontSize: 12 }}>These drive the land-tax surcharges in the portfolio aggregation. A NSW trust without the exclusion loses the $1.075m threshold.</p>
+        </div>
+
+        <div className="panel">
           <h2>Notes</h2>
           <label className="f"><textarea name="notes" rows={3} defaultValue={v(e.notes)} /></label>
         </div>

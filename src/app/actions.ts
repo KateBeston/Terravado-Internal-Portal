@@ -1076,7 +1076,11 @@ export async function updateEntityAction(fd: FormData) {
   const { tenantId } = await getCurrentTenant();
   const id = s(fd, "id");
   if (!id) return;
-  await svc.updateEntity(tenantId, id, { name: s(fd, "name"), kind: s(fd, "kind"), region: s(fd, "region"), abn: s(fd, "abn"), phone: s(fd, "phone"), email: s(fd, "email"), website: s(fd, "website"), clientId: s(fd, "clientId"), notes: s(fd, "notes") });
+  await svc.updateEntity(tenantId, id, {
+    name: s(fd, "name"), kind: s(fd, "kind"), region: s(fd, "region"), abn: s(fd, "abn"),
+    phone: s(fd, "phone"), email: s(fd, "email"), website: s(fd, "website"), clientId: s(fd, "clientId"), notes: s(fd, "notes"),
+    foreign: s(fd, "foreign") === "on", deedExcludesForeign: s(fd, "deedExcludesForeign") === "on",
+  });
   revalidatePath(`/entities/${id}`, "layout"); revalidatePath("/entities");
 }
 export async function deleteEntityAction(fd: FormData) {

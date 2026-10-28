@@ -40,6 +40,8 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Re
       ownerKey: p.entityId ?? `personal:${client!.id}`,
       ownerName: ownerName(p), ownerKind: ent?.kind ?? "Individual",
       isPPOR: p.details?.tax?.isPPOR ?? false,
+      foreign: ent?.foreign ?? false,
+      deedExcludesForeign: ent?.deedExcludesForeign ?? false,
     };
   });
   const landtax = aggregateLandTax(holdings);
@@ -187,8 +189,9 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Re
                     </tr>
                   </tbody>
                 </table>
-                {g.tax > g.standalone + 100 && <p style={{ color: "#b03a2e", fontSize: 13, marginTop: 6 }}>Aggregation costs an extra <strong>{money(g.tax - g.standalone)}</strong> a year in this group.</p>}
-                {g.nswTrustFlag && <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>NSW trust: if the trust deed does not exclude foreign persons, the land-tax threshold is unavailable and a surcharge applies — confirm the deed. (Not included in the figures above.)</p>}
+                {g.tax > g.standalone + 100 && <p style={{ color: "#b03a2e", fontSize: 13, marginTop: 6 }}>Aggregation and surcharges cost an extra <strong>{money(g.tax - g.standalone)}</strong> a year in this group.</p>}
+                {g.trustSurcharge > 0 && <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>Includes a <strong>{money(g.trustSurcharge)}</strong> NSW trust no-threshold surcharge (deed does not exclude foreign persons — set it on the entity if it does).</p>}
+                {g.foreignSurcharge > 0 && <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>Includes a <strong>{money(g.foreignSurcharge)}</strong> foreign-owner land-tax surcharge.</p>}
               </div>
             ))}
             {landtax.excluded.length > 0 && (

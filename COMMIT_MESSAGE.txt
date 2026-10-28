@@ -1,24 +1,27 @@
-Add Medicare levy thresholds, MLS and Division 293 (INTERNAL-PORTAL)
+Land-tax completeness: foreign & trust surcharges + VIC VRLT (INTERNAL-PORTAL)
 
-Fills the Medicare/super-tax gaps from the tax review and makes the income-tax
-calc accurate at low incomes.
+The per-state land-tax scales were already current (VIC's $50k COVID threshold,
+ACT's no-threshold). The gap was the surcharges that never fired because no
+entity flag triggered them. This wires them in and adds VIC's vacant-land tax.
 
-- Medicare levy now uses the low-income phase-in (nil below the threshold, 10%
-  shade-in band, full 2% above) instead of a flat 2% — wired into incomeTax.AU,
-  so it flows through every after-tax and serviceability figure. (At $100k/$200k
-  the full 2% still applies, so those checks are unchanged.)
-- Medicare Levy Surcharge — single tiers (1% / 1.25% / 1.5%) for those without
-  private hospital cover, as medicareLevySurcharge(ti, hasCover).
-- Division 293 — the extra 15% "super tax" on concessional contributions where
-  income + contributions exceed $250,000, as division293(incomePlusContrib,
-  concessional). Both are exported engine functions ready to wire to a
-  private-cover flag and a super-contributions input.
-- tax-data: MEDICARE constants (single thresholds, indexed annually — maintain
-  with the tax scale).
-- Assurance: 4 new known-answer checks (levy phase-in $400; levy nil; MLS $2,400;
-  Div 293 $4,125). Suite now 31/31.
+What's new
+- OwnershipEntity gains `foreign` and `deedExcludesForeign` flags, set on the
+  entity record ("Land-tax status").
+- aggregateLandTax now computes, per owner group: the NSW trust no-threshold
+  surcharge (1.6% of the first $1.075m when a trust's deed does not exclude
+  foreign persons) and the foreign-owner surcharge (the state's rate on the land
+  value). The group exposes baseTax / trustSurcharge / foreignSurcharge; the
+  portfolio shows each when it applies.
+- Portfolio passes the entity's foreign / deed-excludes-foreign flags into the
+  aggregation, so trust and foreign holdings now carry real surcharge figures
+  instead of just a flag.
+- vicVacantResidentialLandTax() — VIC VRLT, escalating 1%/2%/3% of capital
+  improved value by consecutive vacant year (statewide from 1 Jan 2025).
 
-Verified: tsc clean; verify:engine 31/31; build green.
+Assurance: 3 new checks (NSW trust $1m → $16,000 surcharge; foreign NSW $1m →
+$50,000; VIC VRLT $800k y1 → $8,000). Suite now 34/34.
+
+Verified: tsc clean; verify:engine 34/34; build green.
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV

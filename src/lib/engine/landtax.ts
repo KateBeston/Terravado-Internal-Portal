@@ -28,6 +28,8 @@ export interface LandTaxHolding {
   ownerName: string;
   ownerKind?: string;    // Individual / Joint / Company / Trust / SMSF / …
   isPPOR?: boolean;
+  foreign?: boolean;             // foreign owner → surcharge land tax
+  deedExcludesForeign?: boolean; // trust deed excludes foreign persons → avoids NSW trust surcharge
 }
 
 export interface LandTaxProp {
@@ -45,10 +47,13 @@ export interface LandTaxGroup {
   ownerName: string;
   ownerKind?: string;
   landValue: number;     // aggregate unimproved land value
-  tax: number;           // group liability (threshold applied once)
+  tax: number;           // group liability (threshold applied once, incl. surcharges)
+  baseTax: number;       // land tax before surcharges
+  trustSurcharge: number; // NSW trust no-threshold surcharge applied
+  foreignSurcharge: number; // foreign-owner surcharge applied
   standalone: number;    // sum of each holding assessed alone
   props: LandTaxProp[];
-  nswTrustFlag: boolean;  // NSW trust — deed foreign-exclusion not tracked; surcharge may apply
+  nswTrustFlag: boolean;  // NSW trust where the deed does not exclude foreign persons
 }
 
 export interface LandTaxResult {
@@ -70,18 +75,26 @@ export function aggregateLandTax(holdings: LandTaxHolding[], country = "AU"): La
     if (h.isPPOR) { byProp[h.id] = 0; excluded.push({ id: h.id, label: h.label, reason: "Principal place of residence (exempt)" }); continue; }
     if (!(h.landValue > 0)) { byProp[h.id] = 0; excluded.push({ id: h.id, label: h.label, reason: "No unimproved land value set" }); continue; }
     const key = h.region + "|" + h.ownerKey;
+    const isNswTrustSurcharge = h.region === "NSW" && h.ownerKind === "Trust" && !h.deedExcludesForeign;
     const g = groups[key] || (groups[key] = {
       key, region: h.region, ownerName: h.ownerName, ownerKind: h.ownerKind,
-      landValue: 0, tax: 0, standalone: 0, props: [],
-      nswTrustFlag: h.region === "NSW" && h.ownerKind === "Trust",
-    });
+      landValue: 0, tax: 0, baseTax: 0, trustSurcharge: 0, foreignSurcharge: 0, standalone: 0, props: [],
+      nswTrustFlag: isNswTrustSurcharge, foreign: !!h.foreign,
+    } as LandTaxGroup & { foreign: boolean });
     g.props.push({ id: h.id, label: h.label, landValue: h.landValue, share: 0, apportioned: 0, standalone: C.landTax(h.landValue, h.region) });
   }
 
   const list = Object.values(groups);
   for (const g of list) {
+    const foreign = (g as LandTaxGroup & { foreign?: boolean }).foreign ?? false;
     g.landValue = g.props.reduce((a, p) => a + p.landValue, 0);
-    g.tax = C.landTax(g.landValue, g.region);
+    g.baseTax = C.landTax(g.landValue, g.region);
+    // NSW trust without a foreign-exclusion deed loses the threshold: the first
+    // $1,075,000 (normally free) is taxed at the 1.6% land-tax rate.
+    g.trustSurcharge = g.nswTrustFlag ? 0.016 * Math.min(g.landValue, 1075000) : 0;
+    // Foreign-owner surcharge: the state's surcharge rate on the land value.
+    g.foreignSurcharge = foreign ? C.foreignLandTax(g.region) * g.landValue : 0;
+    g.tax = g.baseTax + g.trustSurcharge + g.foreignSurcharge;
     g.standalone = g.props.reduce((a, p) => a + p.standalone, 0);
     for (const p of g.props) {
       p.share = g.landValue > 0 ? p.landValue / g.landValue : 0;
