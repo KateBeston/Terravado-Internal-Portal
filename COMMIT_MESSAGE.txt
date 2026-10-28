@@ -1,31 +1,27 @@
-Wrap the map in Atlas — national growth section with stats, charts & map (INTERNAL-PORTAL)
+Atlas map: full interaction + search & filters (INTERNAL-PORTAL)
 
-Atlas is Terravado's section for monitoring property growth across Australia —
-macro (national & state) now, micro (region & suburb) as the finer feeds
-connect. The interactive map becomes one tab inside it, alongside an Overview of
-stats and charts.
+Makes the map fully interactive and adds search + state zoom.
 
 What's new
-- /atlas section with a tab strip: Overview and Map.
-- Overview: national KPIs (pop-weighted property growth, top-growth state,
-  population tracked, avg population growth), two charts (property growth by
-  state; ABS population growth by state, reusing the in-house Chart), and a
-  Hotspots table ranking states by property growth with population and job
-  growth alongside.
-- Map moved under Atlas at /atlas/map (same interactive Leaflet map, choropleth,
-  overlays and development-type filter). The old /map path now redirects there.
-- Nav: "Map" replaced by "Atlas".
+- Interaction: scroll-wheel zoom, click-drag pan and double-click zoom are
+  on, and clicking a state now zooms the map to that state's bounds.
+- Search box — geocodes any address, suburb, street, area or council across
+  Australia (OpenStreetMap Nominatim, AU-scoped), lists matches, and flies to
+  the pick (fits its bounding box, drops a marker with the full name).
+- "Zoom to state" dropdown — jumps to any state's extent, or All Australia to
+  reset. Clicking a state on the map keeps the dropdown in sync.
 
 Scope / honesty
-- Macro (state) level now; region and suburb hotspots arrive with the finer
-  boundaries and the connected property-data feed. Property growth is indicative
-  (stub) until CoreLogic/VG; ABS figures are the labelled snapshot until the live
-  ABS API is connected.
+- Region, suburb and council *boundary* filters (cascading dropdowns + finer
+  choropleth) need the SA-region and LGA boundary layers, which aren't connected
+  yet — until then Search reaches any of those places by name. The UI says so.
+- Search calls Nominatim from the browser at runtime (no key); it's rate-limited,
+  fine for interactive use.
 
 Verification
 - tsc --noEmit clean
 - npm run verify:engine — 23/23
-- npm run build — /atlas, /atlas/map and /map (redirect) all build
+- npm run build — /atlas and /atlas/map build
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV
