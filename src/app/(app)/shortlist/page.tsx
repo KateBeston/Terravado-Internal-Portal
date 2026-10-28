@@ -47,7 +47,8 @@ export default async function ShortlistPage({ searchParams }: { searchParams: Re
     const fromProps: Candidate[] = properties.filter((p) => p.status === "considering").map((p) => ({
       id: p.id, source: "property", label: p.address, state: p.state,
       price: p.price, weeklyRent: p.details?.weeklyRent, beds: p.details?.physical?.beds,
-      growthPct: p.details?.locality?.annualGrowthPct, href: `/properties/${p.id}`, sublabel: p.details?.locality?.suburb,
+      growthPct: p.details?.locality?.annualGrowthPct, buildYear: p.details?.physical?.buildYear,
+      href: `/properties/${p.id}`, sublabel: p.details?.locality?.suburb,
     }));
     const fromStock: Candidate[] = lots.filter((l) => l.status === "available" || l.status === "under_offer").map((l) => {
       const dev = l.developmentId ? devById.get(l.developmentId) : undefined;
@@ -131,8 +132,10 @@ export default async function ShortlistPage({ searchParams }: { searchParams: Re
               </table>
             )}
             <p className="muted" style={{ fontSize: 12 }}>
-              Ranked by the engine verdict for {client.name}&apos;s position, tilted by the chosen goal. &ldquo;Best on paper&rdquo; — it models the data,
-              not condition, aspect, flooding or vendor circumstances, so treat the list as where to look, then inspect. Not financial advice.
+              Ranked by the engine verdict for {client.name}&apos;s position, tilted by the chosen goal, with <strong>land tax and
+              depreciation folded into the after-tax cashflow</strong> (estimated where the record doesn&apos;t carry the real figures —
+              see each row&apos;s &ldquo;Why&rdquo;). &ldquo;Best on paper&rdquo; — it models the data, not condition, aspect, flooding or vendor
+              circumstances, so treat the list as where to look, then inspect. Not financial advice.
             </p>
           </div>
         </>

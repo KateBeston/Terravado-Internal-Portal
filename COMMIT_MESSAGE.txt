@@ -1,30 +1,30 @@
-Add the Shortlist engine — model-backed, per-client property ranking (INTERNAL-PORTAL)
+Shortlist: fold land tax & depreciation into the per-client ranking (INTERNAL-PORTAL)
 
-The generalisation of stock matching into the north-star feature: rank candidate
-properties for a specific client by running each through the full modelling
-engine, not four preference weights. "Best on paper, for this person," explained.
+The ranking now reflects the two factors that most change "best on paper" after
+tax — depreciation and land tax — by threading them through the model so the
+engine's own after-tax cashflow (and therefore the score) accounts for them.
 
 What's new
-- rankForClient() (src/lib/shortlist): for each candidate it runs runModel
-  against the client's serviceability position and the area's growth, then ranks
-  by the engine verdict — tilted by the client's goal (balanced / cashflow /
-  growth) and their criteria (min yield, state, min beds). A property that isn't
-  serviceable can't be a top pick. Every rank carries its working (verdict,
-  serviceability, after-tax weekly, yield, projected equity).
-- /shortlist page (nav "Shortlist", gated on the clients capability): pick a
-  client + goal + criteria; it ranks the pool and shows the top 10 with a "Why"
-  breakdown per row, the client's borrowing capacity, and the top pick.
-- Candidate pool for this first slice: the tenant's "considering" properties +
-  available/under-offer stock lots. The engine takes Candidate[] from any source,
-  so a listings feed slots in later as another source.
-- Framed as a shortlist to investigate, not advice — it models the data, not
-  condition / aspect / flooding / vendor circumstances.
+- ModelInputs gains landValue and buildYear; core() maps them to the engine's
+  land-tax basis and Div 43 eligibility — so a candidate's land tax and
+  depreciation are modelled per-property, not inherited from the seed.
+- Shortlist estimates, per candidate, a conservative construction cost, plant
+  value and unimproved land value (clearly labelled estimates, used only when the
+  record doesn't carry real figures), feeds them to runModel, and the after-tax
+  weekly + verdict now include depreciation benefit and land-tax cost.
+- Each row's "Why" shows the estimated year-1 depreciation and standalone land
+  tax, so the numbers are explainable, not hidden in the score.
+
+Effect
+- A new build now out-ranks an identical-priced older property on after-tax
+  cashflow because of depreciation (verified: ~$13k/yr yr-1 deduction, −$201/wk
+  vs −$299/wk). Standalone land tax reads correctly (often $0 below threshold —
+  the aggregation bite needs the client's existing holdings, a later deepening).
 
 Verification
-- tsc clean; verify:engine 23/23; build green; /shortlist → HTTP 200.
-- Ran rankForClient directly on synthetic candidates: sensible ordering (cheap
-  high-yield tops a cashflow goal; a $1.25m low-yield over-capacity property
-  ranks last and is flagged not serviceable), with full reasons.
+- tsc clean; verify:engine 23/23; build green.
+- Ran rankForClient on synthetic candidates: depreciation differentiates new vs
+  old; land tax computed per state; reasons surface both.
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV

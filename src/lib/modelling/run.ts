@@ -33,6 +33,11 @@ export interface ModelInputs {
   // acquisition costs, depreciation and capex. Unset fields fall back to the
   // engine's standard assumptions, so the simple run is unchanged.
   modelling?: PropertyModelling;
+  // Optional unimproved land value — drives the engine's land-tax deduction.
+  // When absent the seed property's land value is used.
+  landValue?: number;
+  // Optional build year — gates Div 43 capital-works depreciation (post-1987).
+  buildYear?: number;
   // Optional lender products to assess against (from the tenant's manual lender
   // setup). When absent the built-in templates are used.
   lenders?: any[];
@@ -118,6 +123,10 @@ function core(inp: ModelInputs): Core {
     if (m.scrapYear !== undefined) p.dep.scrapYear = m.scrapYear;
     if (m.scrapValue !== undefined) p.dep.scrapValue = m.scrapValue;
   }
+
+  // Unimproved land value for the land-tax deduction.
+  if (inp.landValue !== undefined) { p.tax = p.tax || {}; p.tax.landValueManual = inp.landValue; p.tax.landTaxMode = "auto"; }
+  if (inp.buildYear !== undefined) { p.phys = p.phys || {}; p.phys.buildYear = inp.buildYear; }
 
   // Strip the sample property's own history/title artifacts so the verdict's
   // flags reflect the entered inputs, not 14 Sample St's backstory. Capex
