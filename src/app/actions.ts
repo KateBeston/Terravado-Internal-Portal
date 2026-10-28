@@ -437,6 +437,8 @@ export async function addPropertyListItemAction(fd: FormData) {
   const details = { ...(p.details ?? {}) };
   if (list === "sales") {
     details.sales = [...(details.sales ?? []), { date: s(fd, "date"), price: n(fd, "price"), method: s(fd, "method"), note: s(fd, "note") }];
+  } else if (list === "valuations") {
+    details.valuations = [...(details.valuations ?? []), { date: s(fd, "date"), type: s(fd, "type"), valuer: s(fd, "valuer"), value: n(fd, "value"), basis: s(fd, "basis"), note: s(fd, "note") }];
   } else if (list === "easements") {
     const title = { ...(details.title ?? {}) };
     title.easements = [...(title.easements ?? []), { type: s(fd, "type"), beneficiary: s(fd, "beneficiary"), width: n(fd, "width"), note: s(fd, "note") }];
@@ -475,6 +477,8 @@ export async function removePropertyListItemAction(fd: FormData) {
   const details = { ...(p.details ?? {}) };
   if (list === "sales") {
     const a = [...(details.sales ?? [])]; a.splice(idx, 1); details.sales = a;
+  } else if (list === "valuations") {
+    const a = [...(details.valuations ?? [])]; a.splice(idx, 1); details.valuations = a;
   } else if (list === "easements") {
     const title = { ...(details.title ?? {}) }; const a = [...(title.easements ?? [])]; a.splice(idx, 1); title.easements = a; details.title = title;
   } else if (list === "encumbrances") {
@@ -501,7 +505,11 @@ export async function updatePropertyListItemAction(fd: FormData) {
   if (!id || !list || !isFinite(idx)) return;
   const p = await svc.getProperty(tenantId, id); if (!p) return;
   const details = { ...(p.details ?? {}) };
-  if (list === "div43") {
+  if (list === "valuations") {
+    const a = [...(details.valuations ?? [])];
+    if (a[idx]) a[idx] = { date: s(fd, "date"), type: s(fd, "type"), valuer: s(fd, "valuer"), value: n(fd, "value"), basis: s(fd, "basis"), note: s(fd, "note") };
+    details.valuations = a;
+  } else if (list === "div43") {
     const mod = { ...(details.modelling ?? {}) }; const a = [...(mod.div43 ?? [])];
     if (a[idx]) a[idx] = { name: s(fd, "name"), amount: n(fd, "amount"), yearsClaimed: n(fd, "yearsClaimed") };
     mod.div43 = a; details.modelling = mod;

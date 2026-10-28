@@ -243,12 +243,26 @@ export interface PropertyTax {
   isPPOR?: boolean;           // principal place of residence — exempt
 }
 
+/* A valuation event on the property. Lenders assess LVR on the LOWER of the
+   contract price and the valuation, so a valuation under contract is funded by
+   the borrower — the variance is the number that matters for finance. */
+export const VALUATION_TYPES = ["Bank valuation (full)", "Desktop", "Kerbside", "AVM / automated", "Independent / sworn", "Contract price"] as const;
+export interface Valuation {
+  date?: string;
+  type?: string;
+  valuer?: string;   // valuer firm or lender who ordered it
+  value?: number;
+  basis?: string;    // "as is", "on completion", "market value"
+  note?: string;
+}
+
 export interface PropertyDetails {
   weeklyRent?: number;
   title?: PropertyTitle;
   locality?: PropertyLocality;
   physical?: PropertyPhysical;
   sales?: SaleRecord[];
+  valuations?: Valuation[];
   modelling?: PropertyModelling;
   tax?: PropertyTax;
   currentLoanBalance?: number;   // actual outstanding loan today; when set, the equity chain uses it instead of the modelled balance

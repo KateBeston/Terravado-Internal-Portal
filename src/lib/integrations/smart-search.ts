@@ -81,6 +81,9 @@ export async function smartSearchProperty(input: SmartSearchInput): Promise<Smar
     };
     if (attr.landValue) details.tax = { landValueManual: attr.landValue };
     price = attr.estimatedValue;
+    if (attr.estimatedValue) {
+      details.valuations = [{ date: attr.asAt, type: "AVM / automated", valuer: attr.source, value: attr.estimatedValue, basis: "market value", note: "Auto estimate from Smart Search" }];
+    }
     disclaimers.push(attr.disclaimer);
     sources.push({ label: "Property attributes & value (RP data)", provider: attr.source, ok: true, live: attr.source !== "stub" });
   } catch { sources.push({ label: "Property attributes & value (RP data)", provider: pd.name, ok: false, live: pdLive }); }

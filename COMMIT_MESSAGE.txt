@@ -1,36 +1,24 @@
-Add Smart Search — build a property record from its address (INTERNAL-PORTAL)
+Add a Valuations tab to the property record (INTERNAL-PORTAL)
 
-The property-record analog of TGS's Sanctum Smart Search. Enter an address and
-Terravado fans out across the integration seams and creates a pre-filled
-property record, ready to review on its tabs.
+Records each valuation event and surfaces the number that matters for finance:
+the contract-vs-valuation variance and the lending value (the lower of the two).
 
-What it populates
-- Geocode (lat/lng, place_id) — Google Places when the address is picked from
-  autocomplete, else the property-data provider's geocode.
-- Suburb data — median, vacancy, growth into the Locality tab.
-- Property attributes & value (RP data) — type, beds/baths/cars, land size,
-  build year into Physical; unimproved land value into the land-tax field;
-  estimated value as the price.
-- Title particulars (land registry) — title reference, lot/plan, zoning into
-  the Title tab.
-
-Seams & honesty
-- New titles seam (src/lib/integrations/titles) — provider interface + stub,
-  gated on TITLES_PROVIDER; real broker (GlobalX / InfoTrack / Dye & Durham /
-  CITEC) slots in later. Added to the integration registry.
-- property-data provider gains propertyAttributes() (stub + CoreLogic
-  placeholder).
-- smartSearchProperty() orchestrator calls each source independently and
-  wrapped, so one unavailable provider degrades to a gap, not a failure. Every
-  source reports whether it ran live or on the indicative stub.
-- Until CoreLogic/RP data and a titles broker are connected it runs on clearly-
-  labelled placeholder data — the UI says so and links to Integrations. No DB
-  migration (everything lands in the existing columns + details jsonb).
+What's new
+- /properties/[id]/valuations tab — valuation events (date, type, valuer/lender,
+  assessed value, basis, note) with full CRUD (add, edit in place, delete).
+- Headline summary: contract/current price, latest valuation, variance, and
+  lending value (lower of), with a shortfall warning spelling out that the
+  borrower funds the gap and the LVR is assessed on the lower figure.
+- Valuation type list: bank (full), desktop, kerbside, AVM, independent/sworn,
+  contract price.
+- Smart Search now drops its AVM estimate in as the baseline valuation.
+- Nav: Valuations tab after Sales history. No DB migration (stored in the
+  existing properties.details jsonb).
 
 Verification
 - tsc --noEmit clean
 - npm run verify:engine — 23/23
-- npm run build — /properties builds
+- npm run build — valuations tab builds
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV
