@@ -1,18 +1,36 @@
-Depreciation schedule: edit line items in place (INTERNAL-PORTAL)
+Add Smart Search — build a property record from its address (INTERNAL-PORTAL)
 
-The Div 43 and Div 40 schedule lines could be added and removed but not edited.
-This makes them full CRUD — each row is now editable in place.
+The property-record analog of TGS's Sanctum Smart Search. Enter an address and
+Terravado fans out across the integration seams and creates a pre-filled
+property record, ready to review on its tabs.
 
-What's new
-- updatePropertyListItemAction — edits a div43 / div40 line at its index
-  (merged back into properties.details jsonb; no migration).
-- Depreciation tab: each Div 43 and Div 40 row is now a live form — inputs
-  pre-filled, a Save per row, delete (x) kept. (Uses the HTML `form` attribute
-  so one row's inputs post together while the table layout stays intact.)
+What it populates
+- Geocode (lat/lng, place_id) — Google Places when the address is picked from
+  autocomplete, else the property-data provider's geocode.
+- Suburb data — median, vacancy, growth into the Locality tab.
+- Property attributes & value (RP data) — type, beds/baths/cars, land size,
+  build year into Physical; unimproved land value into the land-tax field;
+  estimated value as the price.
+- Title particulars (land registry) — title reference, lot/plan, zoning into
+  the Title tab.
+
+Seams & honesty
+- New titles seam (src/lib/integrations/titles) — provider interface + stub,
+  gated on TITLES_PROVIDER; real broker (GlobalX / InfoTrack / Dye & Durham /
+  CITEC) slots in later. Added to the integration registry.
+- property-data provider gains propertyAttributes() (stub + CoreLogic
+  placeholder).
+- smartSearchProperty() orchestrator calls each source independently and
+  wrapped, so one unavailable provider degrades to a gap, not a failure. Every
+  source reports whether it ran live or on the indicative stub.
+- Until CoreLogic/RP data and a titles broker are connected it runs on clearly-
+  labelled placeholder data — the UI says so and links to Integrations. No DB
+  migration (everything lands in the existing columns + details jsonb).
 
 Verification
 - tsc --noEmit clean
-- npm run build — depreciation tab builds
+- npm run verify:engine — 23/23
+- npm run build — /properties builds
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV

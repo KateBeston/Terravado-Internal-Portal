@@ -3,7 +3,7 @@
    build a derived dataset. A point-in-time snapshot into one client's report is
    permitted. Until a key is present the factory uses the stub. */
 import type { PropertyDataProvider } from "./provider";
-import type { SuburbSnapshot, AddressLookup } from "./types";
+import type { SuburbSnapshot, AddressLookup, PropertyAttributes } from "./types";
 
 export const CORELOGIC_CONFIGURED = Boolean(process.env.CORELOGIC_API_KEY);
 
@@ -13,6 +13,9 @@ export const corelogicPropertyDataProvider: PropertyDataProvider = {
     throw new Error("CoreLogic/Cotality provider not yet implemented — requires a commercial data agreement and key.");
   },
   async lookupAddress(_address: string): Promise<AddressLookup> {
+    throw new Error("CoreLogic/Cotality provider not yet implemented.");
+  },
+  async propertyAttributes(_address: string, _state: string): Promise<PropertyAttributes> {
     throw new Error("CoreLogic/Cotality provider not yet implemented.");
   },
 };

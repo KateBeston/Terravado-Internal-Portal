@@ -13,6 +13,7 @@ import { blankFeasibility } from "@/lib/engine/engine";
 import { getPropertyDataProvider } from "@/lib/integrations/property-data";
 import { assembleDealPack } from "@/lib/deal/pack";
 import { getLodgementProvider } from "@/lib/integrations/lodgement";
+import { smartSearchProperty } from "@/lib/integrations/smart-search";
 import type { LodgementStatus } from "@/lib/domain/types";
 
 const s = (fd: FormData, k: string): string | undefined => {
@@ -294,6 +295,30 @@ export async function createPropertyAction(fd: FormData) {
   revalidatePath("/properties");
   revalidatePath("/portfolio");
 }
+/* Smart Search — build a property record from its address. Fans out across the
+   integration seams (geocode, suburb data, RP-data attributes & value, title
+   particulars), creates the pre-filled record and opens it for review. */
+export async function smartCreatePropertyAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const address = s(fd, "address");
+  if (!address) return;
+  const placeFields = localityFromGeo(fd);
+  const state = s(fd, "geoState") ?? s(fd, "state");
+  const result = await smartSearchProperty({ address, state, placeFields });
+  const created = await svc.addProperty(tenantId, {
+    address,
+    state: result.core.state,
+    price: result.core.price,
+    status: (s(fd, "status") as PropertyStatus) ?? "considering",
+    clientId: s(fd, "clientId"),
+    details: result.details,
+  });
+  revalidatePath("/properties");
+  revalidatePath("/portfolio");
+  redirect(`/properties/${created.id}`);
+}
+
 export async function updatePropertyClientAction(fd: FormData) {
   await requireUser();
   const { tenantId } = await getCurrentTenant();

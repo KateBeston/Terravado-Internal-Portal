@@ -11,4 +11,4 @@ export function getPropertyDataProvider(): PropertyDataProvider {
 
 export { SOURCE_RETENTION, retentionOf, mayStore } from "./retention";
 export type { PropertyDataProvider } from "./provider";
-export type { SuburbSnapshot, AddressLookup, Retention } from "./types";
+export type { SuburbSnapshot, AddressLookup, PropertyAttributes, Retention } from "./types";

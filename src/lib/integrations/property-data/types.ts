@@ -23,3 +23,20 @@ export interface AddressLookup {
   source: string;
   retention: Retention;
 }
+
+/* Property-level attributes for a single address (RP-data / AVM style). */
+export interface PropertyAttributes {
+  address: string;
+  propertyType?: string;
+  beds?: number;
+  baths?: number;
+  cars?: number;
+  landSize?: number;        // m²
+  buildYear?: number;
+  landValue?: number;       // unimproved land value (VG / RP data)
+  estimatedValue?: number;  // automated valuation estimate
+  source: string;
+  retention: Retention;
+  asAt: string;
+  disclaimer: string;
+}

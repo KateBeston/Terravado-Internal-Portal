@@ -9,6 +9,7 @@ import { CDR_CONFIGURED } from "./bank-products";
 import { BANK_DATA_CONFIGURED } from "./bank-data";
 import { STOCK_EXTRACTION_CONFIGURED } from "./extraction";
 import { GOOGLE_MAPS_CONFIGURED } from "./maps";
+import { TITLES_CONFIGURED } from "./titles";
 
 export interface IntegrationStatus {
   key: string;
@@ -36,6 +37,13 @@ export function integrationStatuses(): IntegrationStatus[] {
       fallback: "Built-in indicative stub",
       enables: "Live suburb & property data (query-live, not stored)",
       access: "Commercial licence",
+    },
+    {
+      key: "titles", label: "Land titles", category: "Property data",
+      configured: TITLES_CONFIGURED, envVar: "TITLES_PROVIDER",
+      fallback: "Built-in indicative stub",
+      enables: "Title particulars (title reference, lot/plan, tenure, zoning) into a property record via Smart Search",
+      access: "Titles broker (GlobalX / InfoTrack / Dye & Durham / CITEC); paid per-search, on demand",
     },
     {
       key: "domain", label: "Domain", category: "Listings / property supply",

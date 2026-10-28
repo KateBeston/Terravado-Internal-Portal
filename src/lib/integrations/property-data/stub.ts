@@ -3,7 +3,9 @@
    Google) are connected. NOT sourced data. */
 import { retentionOf } from "./retention";
 import type { PropertyDataProvider } from "./provider";
-import type { AddressLookup, SuburbSnapshot } from "./types";
+import type { AddressLookup, PropertyAttributes, SuburbSnapshot } from "./types";
+
+const PLACEHOLDER = "Indicative placeholder — not sourced data. Replaced by the real providers (Valuer-General / ABS / Geoscape / CoreLogic) once connected.";
 
 function hash(s: string): number {
   let h = 0;
@@ -38,6 +40,25 @@ export const stubPropertyDataProvider: PropertyDataProvider = {
       lng: 151.2 + (h % 1000) / 10000,
       source: "stub",
       retention: retentionOf("google-maps"),
+    };
+  },
+  async propertyAttributes(address: string, _state: string): Promise<PropertyAttributes> {
+    const h = hash("attr|" + address.toLowerCase());
+    const estimatedValue = 650000 + (h % 1200) * 1000;
+    return {
+      address,
+      propertyType: ["House", "Townhouse", "Unit", "Duplex"][h % 4],
+      beds: 2 + (h % 4),
+      baths: 1 + (h % 3),
+      cars: h % 3,
+      landSize: 300 + (h % 500),
+      buildYear: 1985 + (h % 38),
+      landValue: Math.round(estimatedValue * 0.45),
+      estimatedValue,
+      source: "stub",
+      retention: retentionOf("stub"),
+      asAt: new Date().toISOString().slice(0, 10),
+      disclaimer: PLACEHOLDER,
     };
   },
 };
