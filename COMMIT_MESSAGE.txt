@@ -1,19 +1,25 @@
-Add a consistent Back control across the portal (INTERNAL-PORTAL)
+Wire live ABS population into the Atlas map (INTERNAL-PORTAL)
 
-Every screen below the top level now has a "← Back" link; the portal no longer
-relies solely on the sidebar.
+The ABS layer now fetches real Estimated Resident Population by state from the
+open ABS Data API at request time (no key), deriving population and annual
+growth, and falls back to the labelled snapshot on any failure so the Map never
+breaks. The `live` flag and the on-screen disclaimer reflect which is in play.
 
-What's new
-- BackBar component in the app layout, so it appears automatically on every
-  authed page with no per-page edits. It derives the parent from the path:
-  a record tab goes back to the record, a record to its list, a section
-  sub-page to the section. Top-level pages (reachable from the sidebar, e.g.
-  /properties, /atlas) show nothing.
+How it works
+- Live by default (no key). Server-side fetch of the ERP flow as CSV, cached 6h.
+- Robust parse: per state per period it takes the largest observation — the
+  all-persons / all-ages total — so it doesn't depend on the exact ABS dimension
+  keys and survives schema tweaks. Growth = latest vs ~1 year earlier.
+- Job growth stays on the snapshot until a labour-force query is wired.
+- Env: ABS_LIVE=off forces the snapshot; ABS_ERP_URL overrides the query with no
+  code change.
 
-Verified
-- Booted next start: /atlas/map shows Back (HTTP 200); /properties (top-level)
-  shows none (HTTP 200).
-- tsc --noEmit clean; npm run build green.
+Honesty / verification
+- tsc clean; build green. Booted next start: /atlas → HTTP 200.
+- The build sandbox can't reach api.data.abs.gov.au, so I verified the fallback
+  path here (it correctly shows the snapshot). On Vercel the live fetch runs;
+  if the default ERP query doesn't match the current ABS dataflow it stays on
+  the snapshot (never errors), and ABS_ERP_URL points it at the confirmed query.
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV

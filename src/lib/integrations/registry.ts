@@ -41,10 +41,10 @@ export function integrationStatuses(): IntegrationStatus[] {
     },
     {
       key: "abs", label: "ABS statistics", category: "Market & area data",
-      configured: ABS_CONFIGURED, envVar: "ABS_API",
+      configured: ABS_CONFIGURED, envVar: "ABS_LIVE (off to disable) / ABS_ERP_URL (override query)",
       fallback: "Indicative last-known state snapshot on the Map",
-      enables: "Live population, population growth & labour-force data by area for the Map choropleth",
-      access: "Open ABS Data API (SDMX) — no paid key; build the query + area ingestion",
+      enables: "Live population & growth by state from the ABS Data API for the Map choropleth (live by default, no key); job growth still snapshot until a labour-force query is wired",
+      access: "Open ABS Data API — no key; fetched server-side at request time",
     },
     {
       key: "titles", label: "Land titles", category: "Property data",
