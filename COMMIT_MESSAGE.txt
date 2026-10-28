@@ -1,27 +1,19 @@
-Atlas map: full interaction + search & filters (INTERNAL-PORTAL)
+Fix Atlas server-side exception — move charts to a client component (INTERNAL-PORTAL)
 
-Makes the map fully interactive and adds search + state zoom.
+The Atlas Overview is a Server Component and was passing the Chart's formatter
+functions (tip / yFmt) as props into Chart, which is a Client Component. Next.js
+can't pass functions across the server→client boundary, so the page threw a
+server-side exception at render time (it built clean because the page is dynamic,
+so the build never executed it).
 
-What's new
-- Interaction: scroll-wheel zoom, click-drag pan and double-click zoom are
-  on, and clicking a state now zooms the map to that state's bounds.
-- Search box — geocodes any address, suburb, street, area or council across
-  Australia (OpenStreetMap Nominatim, AU-scoped), lists matches, and flies to
-  the pick (fits its bounding box, drops a marker with the full name).
-- "Zoom to state" dropdown — jumps to any state's extent, or All Australia to
-  reset. Clicking a state on the map keeps the dropdown in sync.
+Fix
+- New client component AtlasCharts renders both Overview charts; the server page
+  passes only the plain data arrays, so no functions cross the boundary.
 
-Scope / honesty
-- Region, suburb and council *boundary* filters (cascading dropdowns + finer
-  choropleth) need the SA-region and LGA boundary layers, which aren't connected
-  yet — until then Search reaches any of those places by name. The UI says so.
-- Search calls Nominatim from the browser at runtime (no key); it's rate-limited,
-  fine for interactive use.
-
-Verification
-- tsc --noEmit clean
-- npm run verify:engine — 23/23
-- npm run build — /atlas and /atlas/map build
+Verified
+- Booted next start and loaded the routes: /atlas -> HTTP 200 (Atlas, Hotspots and
+  the growth stats render), /atlas/map -> HTTP 200. No exception.
+- tsc --noEmit clean; npm run build green.
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV

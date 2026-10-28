@@ -1,7 +1,7 @@
 import { requireUser } from "@/lib/auth/guard";
 import { getPropertyDataProvider } from "@/lib/integrations/property-data";
 import { getAbsIndicators } from "@/lib/integrations/abs";
-import Chart from "@/components/Chart";
+import AtlasCharts from "./AtlasCharts";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +10,6 @@ const CAPITALS: Record<string, string> = {
   NSW: "Sydney", VIC: "Melbourne", QLD: "Brisbane", WA: "Perth",
   SA: "Adelaide", TAS: "Hobart", ACT: "Canberra", NT: "Darwin",
 };
-const GOLD = "#B08D2E", GREEN = "#2D3A21";
 const pct = (v?: number) => (v === undefined ? "—" : v.toFixed(1) + "%");
 const bigN = (v?: number) => (v === undefined ? "—" : v.toLocaleString("en-AU"));
 
@@ -49,22 +48,7 @@ export default async function AtlasOverview() {
         <div className="card"><div className="k">Avg population growth</div><div className="v">{pct(avgPopGrowth)}</div><div className="k">ABS, p.a.</div></div>
       </div>
 
-      <div className="split" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-        <div className="panel">
-          <h2>Property growth by state</h2>
-          <Chart data={growthData} opts={{
-            xKey: "state", height: 240, yFmt: (v) => v.toFixed(1) + "%",
-            series: [{ key: "growth", type: "bar", color: GOLD, label: "Growth % p.a.", tip: (v) => v.toFixed(1) + "%" }],
-          }} />
-        </div>
-        <div className="panel">
-          <h2>Population growth by state (ABS)</h2>
-          <Chart data={popGrowthData} opts={{
-            xKey: "state", height: 240, yFmt: (v) => v.toFixed(1) + "%",
-            series: [{ key: "popGrowth", type: "bar", color: GREEN, label: "Pop. growth % p.a.", tip: (v) => v.toFixed(1) + "%" }],
-          }} />
-        </div>
-      </div>
+      <AtlasCharts growthData={growthData} popGrowthData={popGrowthData} />
 
       <div className="panel">
         <h2>Hotspots — states ranked by property growth</h2>
