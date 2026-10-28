@@ -1,27 +1,23 @@
-feat(stock): developer stock foundation — developments + lots (advisor-side), gated by a stock capability
+feat(match): stock matching engine — rank developer stock against a client's capacity & criteria
 
 INTERNAL PORTAL.
 
-First build of the developer-stock / advisor module (buy-side). This is the
-foundation the matching engine and advisor business tooling will hang off.
+The property-matching wedge: score the stock list (lots) against a client's
+buying position and surface the best-fit lots. Indicative ranking, not advice.
 
-- Developments: a developer project the advisor has stock in — developer,
-  location, status, commission arrangement (% or flat $/lot), and a link to the
-  stock-list PDF. Full CRUD at /stock and /stock/[id].
-- Lots (stock) under a development: lot number, address, stage, price,
-  availability, beds/baths/cars/land, plus the MARKETED figures (advertised
-  weekly rent, yield %, and a free-text advertised ROI). Add/list/delete on the
-  development record.
-- New "stock" capability, granted to broker / consultant / buyers-agent account
-  types (not public); the nav "Stock" item and both pages are capability-gated.
+- lib/matching — matchStock(items, criteria) scores each available/under-offer
+  lot on affordability (client's borrowing capacity + deposit — the strongest
+  factor), yield (advertised, or derived from rent/price vs target), preferred
+  state, and minimum beds; returns a 0-100 score, a verdict (strong / possible /
+  stretch, never "strong" if over budget) and plain-language reasons.
+- /match page (nav "Match", gated on the stock capability): pick a borrower, set
+  deposit + criteria (target yield, state, min beds); borrowing capacity is
+  computed from their serviceability position (assessPosition over their derived
+  finances), max purchase = capacity + deposit, and the stock is ranked with
+  score, verdict and the why.
 
-Migration 0017 (applied): developments and lots tables (+RLS tenant-scoped,
-indexes).
-
-Spec recorded in The Business section (and project docs). Next: the matching
-engine (score stock against a client's capacity + criteria), then the commission
-calculator, commission/revenue tracker and advisor deal pipeline. Stock-list PDF
-is stored by link for now; structured entry is in, AI-assisted extraction later.
+No migration — reads clients, developments and lots. Next in the module: the
+commission calculator, commission/revenue tracker and advisor deal pipeline.
 
 Verified: tsc --noEmit clean · verify:engine 20/20 · next build green.
 
