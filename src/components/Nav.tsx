@@ -13,6 +13,7 @@ const LINKS: [string, string, string?][] = [
   ["/contacts", "Contacts", "clients"],
   ["/entities", "Entities", "entities"],
   ["/properties", "Properties", "properties"],
+  ["/map", "Map"],
   ["/stock", "Stock", "stock"],
   ["/match", "Match", "stock"],
   ["/feasibility", "Feasibility", "stock"],

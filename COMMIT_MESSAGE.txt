@@ -1,24 +1,42 @@
-Add a Valuations tab to the property record (INTERNAL-PORTAL)
+Add the Map explorer — increment 1: shell, choropleth, layer framework, ABS (INTERNAL-PORTAL)
 
-Records each valuation event and surfaces the number that matters for finance:
-the contract-vs-valuation variance and the lending value (the lower of the two).
+First slice of the interactive Australia map. The map UI, the red→blue growth
+choropleth, state filtering and the overlay + development-type framework are all
+here; each data source lights up as it's connected, same pattern as the other
+integrations.
 
 What's new
-- /properties/[id]/valuations tab — valuation events (date, type, valuer/lender,
-  assessed value, basis, note) with full CRUD (add, edit in place, delete).
-- Headline summary: contract/current price, latest valuation, variance, and
-  lending value (lower of), with a shortfall warning spelling out that the
-  borrower funds the gap and the LVR is assessed on the lower figure.
-- Valuation type list: bank (full), desktop, kerbside, AVM, independent/sworn,
-  contract price.
-- Smart Search now drops its AVM estimate in as the baseline valuation.
-- Nav: Valuations tab after Sales history. No DB migration (stored in the
-  existing properties.details jsonb).
+- /map page (new "Map" nav entry) — interactive Leaflet map of Australia (zoom,
+  pan, OSM basemap), choropleth over the state boundaries coloured red (high) →
+  blue (slow / stagnant).
+- Colour-by selector: Property growth, Population growth, Job growth, Population.
+  Property growth reads the property-data seam (indicative stub now / CoreLogic
+  later); ABS metrics are the first live-ready layer.
+- ABS seam (src/lib/integrations/abs) — getAbsIndicators() returns per-state
+  population + pop/job growth; ships a clearly-labelled indicative snapshot,
+  gated on ABS_API for the live Data API (SDMX). Added to the integration
+  registry.
+- Overlay framework: toggles for government infrastructure, town/community
+  planning, transport & rail, private development and planned developments, each
+  labelled "not connected" with what connecting it needs; a development-type
+  dropdown filters the planned-development layer. No fake markers — overlays show
+  their connect-source note until wired.
+- Bundled simplified ABS state boundaries (au-states.json, ~35 KB).
+- New deps: leaflet + react-leaflet (loaded SSR-off via a dynamic import so
+  Leaflet's window access doesn't break the server render). Run npm install
+  after unzipping so these are picked up.
+
+Scope / honesty
+- State level now. SA-region and suburb drill-down need the finer ABS boundaries
+  and the licensed property-data feed (CoreLogic/VG); planning, infrastructure
+  and development overlays are each their own source to connect (ABS/data.gov.au
+  open; Cordell/BCI licensed). The ABS snapshot is indicative last-known, not a
+  live read.
 
 Verification
 - tsc --noEmit clean
 - npm run verify:engine — 23/23
-- npm run build — valuations tab builds
+- npm run build — /map builds (SSR-safe)
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV

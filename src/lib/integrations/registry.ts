@@ -10,6 +10,7 @@ import { BANK_DATA_CONFIGURED } from "./bank-data";
 import { STOCK_EXTRACTION_CONFIGURED } from "./extraction";
 import { GOOGLE_MAPS_CONFIGURED } from "./maps";
 import { TITLES_CONFIGURED } from "./titles";
+import { ABS_CONFIGURED } from "./abs";
 
 export interface IntegrationStatus {
   key: string;
@@ -37,6 +38,13 @@ export function integrationStatuses(): IntegrationStatus[] {
       fallback: "Built-in indicative stub",
       enables: "Live suburb & property data (query-live, not stored)",
       access: "Commercial licence",
+    },
+    {
+      key: "abs", label: "ABS statistics", category: "Market & area data",
+      configured: ABS_CONFIGURED, envVar: "ABS_API",
+      fallback: "Indicative last-known state snapshot on the Map",
+      enables: "Live population, population growth & labour-force data by area for the Map choropleth",
+      access: "Open ABS Data API (SDMX) — no paid key; build the query + area ingestion",
     },
     {
       key: "titles", label: "Land titles", category: "Property data",
