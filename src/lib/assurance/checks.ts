@@ -11,6 +11,7 @@
    =========================================================================== */
 
 import { TAX_DATA } from "../engine/tax-data";
+import { aggregateLandTax } from "../engine/landtax";
 import { seedContext } from "../engine/seeds";
 import {
   project, monteCarlo, feasibility, serviceability, valuation, equityChain,
@@ -68,6 +69,11 @@ const referenceChecks: CheckDef[] = [
   ref("duty-qld-540k", "Transfer duty", "QLD duty on $540,000", "Queensland Revenue Office — transfer duty", 17325, () => TAX_DATA.transferDuty.QLD(540000)),
   ref("landtax-nsw-1_5m", "Land tax", "NSW land tax on $1.5m land value", "Revenue NSW — land tax", 6900, () => TAX_DATA.landTax.NSW(1500000)),
   ref("landtax-nsw-threshold", "Land tax", "NSW land tax at $1,075,000 threshold is nil", "Revenue NSW — land tax", 0, () => TAX_DATA.landTax.NSW(1075000)),
+  ref("landtax-aggregation-effect", "Land tax", "Two NSW $800k holdings under one entity: $8,500 aggregated vs $0 standalone", "Revenue NSW — land tax aggregation",
+    8500, () => aggregateLandTax([
+      { id: "a", label: "A", region: "NSW", landValue: 800000, ownerKey: "e1", ownerName: "Trust", ownerKind: "Trust" },
+      { id: "b", label: "B", region: "NSW", landValue: 800000, ownerKey: "e1", ownerName: "Trust", ownerKind: "Trust" },
+    ]).totalAggregated),
   ref("inctax-au-100k", "Income tax", "AU income tax + Medicare on $100,000", "ATO — individual rates 2025–26", 22788, () => TAX_DATA.incomeTax.AU(100000)),
   ref("inctax-au-200k", "Income tax", "AU income tax + Medicare on $200,000", "ATO — individual rates 2025–26", 60138, () => TAX_DATA.incomeTax.AU(200000)),
   {

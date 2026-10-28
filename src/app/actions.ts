@@ -363,6 +363,29 @@ export async function savePropertyDetailsAction(fd: FormData) {
   revalidatePath(`/properties/${id}`, "layout");
 }
 
+/* Save unimproved land values + PPOR flags for a client's properties in one go,
+   then recompute the land-tax aggregation on the portfolio page. Field names are
+   lv_<propertyId> and ppor_<propertyId>; ids carries the property ids. */
+export async function saveLandTaxInputsAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const ids = (s(fd, "ids") ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+  const clientId = s(fd, "clientId");
+  for (const id of ids) {
+    const p = await svc.getProperty(tenantId, id);
+    if (!p) continue;
+    const details = { ...(p.details ?? {}) };
+    details.tax = {
+      ...(details.tax ?? {}),
+      landValueManual: n(fd, `lv_${id}`),
+      isPPOR: s(fd, `ppor_${id}`) === "on" || s(fd, `ppor_${id}`) === "true",
+    };
+    await svc.updateProperty(tenantId, id, { details });
+  }
+  revalidatePath("/portfolio");
+  if (clientId) redirect(`/portfolio?clientId=${clientId}`);
+}
+
 export async function addPropertyListItemAction(fd: FormData) {
   await requireUser();
   const { tenantId } = await getCurrentTenant();

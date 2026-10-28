@@ -1,10 +1,13 @@
 import { requireUser } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
-import { listClients, getClient, listProperties, listLenders } from "@/lib/domain/service";
+import { listClients, getClient, listProperties, listLenders, listEntities } from "@/lib/domain/service";
 import { dealInputs } from "@/lib/deal/pack";
 import { runModel, assessPosition } from "@/lib/modelling/run";
-import { createPropertyAction } from "@/app/actions";
+import { aggregateLandTax, type LandTaxHolding } from "@/lib/engine/landtax";
+import { createPropertyAction, saveLandTaxInputsAction } from "@/app/actions";
 import Link from "next/link";
+
+const pct = (x: number) => (Math.round(x * 10) / 10).toLocaleString("en-AU") + "%";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +29,20 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Re
     .map((l) => ({ id: l.id, name: l.name, isTemplate: false, ...(l.policy ?? {}) }));
 
   const properties = client ? (await listProperties(tenantId)).filter((p) => p.clientId === client.id) : [];
+  const entities = client ? await listEntities(tenantId) : [];
+  const entById = new Map(entities.map((e) => [e.id, e]));
+  const ownerName = (p: (typeof properties)[number]) => (p.entityId ? entById.get(p.entityId)?.name : undefined) ?? (client ? `${client.name} (personal)` : "—");
+  const holdings: LandTaxHolding[] = properties.map((p) => {
+    const ent = p.entityId ? entById.get(p.entityId) : undefined;
+    return {
+      id: p.id, label: p.address, region: p.state ?? "",
+      landValue: p.details?.tax?.landValueManual ?? 0,
+      ownerKey: p.entityId ?? `personal:${client!.id}`,
+      ownerName: ownerName(p), ownerKind: ent?.kind ?? "Individual",
+      isPPOR: p.details?.tax?.isPPOR ?? false,
+    };
+  });
+  const landtax = aggregateLandTax(holdings);
 
   const rows = client ? properties.map((p) => {
     const r = runModel(dealInputs(client, p, engineLenders));
@@ -81,7 +98,7 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Re
               <strong style={{ color: serviceable ? "#1f6f54" : "#b03a2e" }}> {serviceable ? "within capacity" : "over capacity"}</strong>.
             </p>
             <p className="muted" style={{ fontSize: 12 }}>
-              Indicative: capacity is assessed on the client&apos;s position across the lender templates; combined land-tax aggregation is a later refinement.
+              Indicative: capacity is assessed on the client&apos;s position across the lender templates. Land-tax aggregation across the portfolio is shown below.
             </p>
           </div>
 
@@ -103,6 +120,82 @@ export default async function PortfolioPage({ searchParams }: { searchParams: Re
                 {rows.length === 0 && <tr><td colSpan={6} className="muted">No properties assigned to {client.name} yet. Add one below, or assign an existing property on its record.</td></tr>}
               </tbody>
             </table>
+          </div>
+
+          {landtax.difference > 100 && (
+            <div className="panel" style={{ borderLeft: "5px solid #b03a2e" }}>
+              <h2>Land tax — aggregation effect</h2>
+              <p className="muted" style={{ marginTop: -4 }}>
+                Assessed individually these holdings would attract <strong>{money(landtax.totalStandalone)}</strong> of land tax a year.
+                Assessed as the revenue offices actually do it — per owning entity, per state, threshold applied once —
+                they attract <strong>{money(landtax.totalAggregated)}</strong>. The extra <strong style={{ color: "#b03a2e" }}>{money(landtax.difference)}</strong> a
+                year is the single most commonly missed line in Australian property modelling.
+              </p>
+            </div>
+          )}
+
+          <div className="panel">
+            <h2>Land tax inputs</h2>
+            <p className="muted" style={{ marginTop: -4, fontSize: 12 }}>
+              Enter each property&apos;s <strong>unimproved land value</strong> from the land-tax / rates notice — not the purchase price.
+              Tick PPOR to exempt a principal place of residence. Land tax aggregates per state and per owning entity, so assign ownership on each property&apos;s record.
+            </p>
+            {properties.length === 0 ? <p className="muted">No properties yet.</p> : (
+              <form action={saveLandTaxInputsAction}>
+                <input type="hidden" name="clientId" value={client.id} />
+                <input type="hidden" name="ids" value={properties.map((p) => p.id).join(",")} />
+                <table>
+                  <thead><tr><th>Property</th><th>State</th><th>Owner</th><th>Unimproved land value</th><th>PPOR</th></tr></thead>
+                  <tbody>
+                    {properties.map((p) => (
+                      <tr key={p.id}>
+                        <td><strong>{p.address}</strong></td>
+                        <td>{p.state ?? "—"}</td>
+                        <td>{ownerName(p)}</td>
+                        <td><input name={`lv_${p.id}`} inputMode="numeric" defaultValue={p.details?.tax?.landValueManual ?? ""} placeholder="e.g. 820,000" style={{ width: 140 }} /></td>
+                        <td><input type="checkbox" name={`ppor_${p.id}`} defaultChecked={p.details?.tax?.isPPOR ?? false} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <button className="btn" type="submit">Save land values</button>
+              </form>
+            )}
+          </div>
+
+          <div className="panel">
+            <h2>Land tax aggregation</h2>
+            <p className="muted" style={{ marginTop: -4, fontSize: 12 }}>
+              Grouped per state and owning entity. The threshold is applied once to the group total, then apportioned back across the holdings by land-value share.
+            </p>
+            {landtax.groups.length === 0 ? (
+              <p className="muted">No land-taxable holdings yet. Set unimproved land values above — PPORs and properties without a land value are excluded.</p>
+            ) : landtax.groups.map((g) => (
+              <div key={g.key} style={{ marginBottom: 18 }}>
+                <h3 style={{ marginBottom: 6 }}>{g.region || "—"} — {g.ownerName}{g.ownerKind ? ` · ${g.ownerKind}` : ""}</h3>
+                <table>
+                  <thead><tr><th>Property</th><th>Land value</th><th>Share</th><th>Apportioned tax</th><th>If assessed alone</th></tr></thead>
+                  <tbody>
+                    {g.props.map((p) => (
+                      <tr key={p.id}>
+                        <td>{p.label}</td><td>{money(p.landValue)}</td><td>{pct(p.share * 100)}</td>
+                        <td>{money(p.apportioned)}</td><td className="muted">{money(p.standalone)}</td>
+                      </tr>
+                    ))}
+                    <tr style={{ fontWeight: 600 }}>
+                      <td>Aggregate</td><td>{money(g.landValue)}</td><td>100%</td><td>{money(g.tax)}</td><td>{money(g.standalone)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                {g.tax > g.standalone + 100 && <p style={{ color: "#b03a2e", fontSize: 13, marginTop: 6 }}>Aggregation costs an extra <strong>{money(g.tax - g.standalone)}</strong> a year in this group.</p>}
+                {g.nswTrustFlag && <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>NSW trust: if the trust deed does not exclude foreign persons, the land-tax threshold is unavailable and a surcharge applies — confirm the deed. (Not included in the figures above.)</p>}
+              </div>
+            ))}
+            {landtax.excluded.length > 0 && (
+              <p className="muted" style={{ fontSize: 12 }}>
+                Excluded: {landtax.excluded.map((e) => `${e.label} (${e.reason.toLowerCase()})`).join("; ")}.
+              </p>
+            )}
           </div>
 
           <div className="panel">

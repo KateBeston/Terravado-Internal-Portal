@@ -225,6 +225,14 @@ export interface PropertyModelling {
   capex?: CapexEvent[];
 }
 
+/* Land-tax inputs. Unimproved land value is the figure the state revenue office
+   assesses (from the rates/land-tax notice), not the purchase price — so it is
+   entered, not derived. PPOR holdings are exempt and excluded from the aggregate. */
+export interface PropertyTax {
+  landValueManual?: number;   // unimproved land value (VG / revenue office)
+  isPPOR?: boolean;           // principal place of residence — exempt
+}
+
 export interface PropertyDetails {
   weeklyRent?: number;
   title?: PropertyTitle;
@@ -232,6 +240,7 @@ export interface PropertyDetails {
   physical?: PropertyPhysical;
   sales?: SaleRecord[];
   modelling?: PropertyModelling;
+  tax?: PropertyTax;
 }
 
 export interface Property extends Entity {

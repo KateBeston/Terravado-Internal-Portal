@@ -1,28 +1,38 @@
-Port Feasibility out of the retired Workspace into a persisted page
+Port land-tax aggregation into the portfolio (INTERNAL-PORTAL)
 
-The retired Workspace demo held a development-feasibility view that had no
-persisted equivalent anywhere in the real portal. This ports it in full and
-backs it with a real record so studies survive between sessions and are
-tenant-scoped like everything else.
+The retired Workspace demo showed land tax assessed the way the revenue offices
+actually do it — aggregated per state and per owning entity, threshold applied
+once — against the naive standalone sum. The real portfolio had only a
+placeholder ("combined land-tax aggregation is a later refinement"). This ports
+it in, backed by persisted land values.
 
 What's new
-- /feasibility page (gated on the "stock" capability) — list saved studies,
-  select one, create new, delete.
-- FeasibilityEditor: the full Workspace view (Scheme / Costs / Funding /
-  GST & target panels; KPIs; cost-stack, funding and sensitivity tables),
-  now backed by local edit state + a Save action instead of the in-memory
-  demo store. The engine's feasibility() does the maths, unchanged.
-- feasibilities table (migration 0021) — id, tenant_id, name, data jsonb,
-  created_at; RLS tenant-scoped (tenant_id in current_user_tenants()).
-- Service CRUD (list/get/add/update/remove) and server actions
-  (create/save/delete). The whole feasibility model lives in the data jsonb;
-  the shallow case mapper leaves its contents untouched.
-- Nav entry under the advisor tools, between Match and Pipeline.
+- aggregateLandTax() — a pure, tested helper (src/lib/engine/landtax.ts) that
+  groups holdings by state x owning entity, applies the threshold once to the
+  group, and apportions the liability back by land-value share. Reuses the
+  engine's COUNTRIES.AU.landTax schedule.
+- Portfolio page: an "Aggregation effect" banner (standalone vs aggregated and
+  the annual cost of the difference), a per-group breakdown (property, land
+  value, share, apportioned tax, if-assessed-alone, aggregate row), and an
+  excluded list (PPORs and holdings with no land value).
+- "Land tax inputs" editor on the portfolio: set each property's unimproved
+  land value (from the land-tax/rates notice, not the price) and a PPOR flag,
+  saved in one go (saveLandTaxInputsAction) to the property's details.tax.
+- PropertyTax type added to PropertyDetails (landValueManual, isPPOR). No DB
+  migration — it lives in the existing properties.details jsonb.
+
+Honesty notes
+- Land values are entered, never derived from price (an unimproved land value
+  is not a fixed fraction of purchase price).
+- NSW-trust no-threshold surcharge and foreign surcharge are FLAGGED, not
+  computed: the persisted entity does not record the deed's foreign-person
+  exclusion or foreign status, so a surcharge figure would be fabricated.
 
 Verification
 - tsc --noEmit clean
-- npm run verify:engine — 20/20
-- npm run build — /feasibility builds (115 kB first load)
+- npm run verify:engine — 21/21 (new known-answer: two NSW $800k holdings under
+  one entity = $8,500 aggregated vs $0 standalone)
+- npm run build — /portfolio builds
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV
