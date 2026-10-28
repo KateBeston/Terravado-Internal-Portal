@@ -1,28 +1,34 @@
-feat(stock): stock-list import — paste-and-confirm lot entry, with an AI-extraction seam for PDFs
+chore(security): tighten access control — anon locked out of privileged functions, security audit + RLS tests in the repo
 
 INTERNAL PORTAL.
 
-Completes the stock module's loose end: loading a development's stock without
-typing each lot.
+Hardening pass after a security review. Findings and fixes:
 
-- StockImport on the development record: paste the stock list (copied from the
-  developer's PDF or a spreadsheet), it parses each line into an editable confirm
-  table (lot number, address, stage, price, beds, baths, land, rent, yield), you
-  fix anything, then bulk-create the lots. Best-effort parse by design — every
-  developer's layout differs — so every field is editable before saving and
-  nothing imports blind. Delimiter and number handling cope with tabs, CSV,
-  multi-space columns, thousands-commas and "$560pw"-style rent.
-- importLotsAction bulk-creates the confirmed rows under the development.
-- Extraction provider seam (lib/integrations/extraction), config-gated on
-  STOCK_EXTRACTION_PROVIDER, registered on the Integrations page: when an LLM key
-  is connected, a PDF upload will auto-extract rows into the same confirm table.
-  Until then the paste path carries the feature. .env.example documents the var.
+- Audit (clean): every table has RLS; tenant data is scoped by
+  current_user_tenants(); no permissive `using (true)` policies (bar the
+  intentional shared market-data read); every tenant table is policied; every
+  SECURITY DEFINER function carries a guard. Runtime proof: an impersonated
+  non-member sees 0 rows across contacts/properties/deals/developments/etc.
+- Fix (migration 0019): the privileged SECURITY DEFINER functions (admin_*,
+  tenant_members, accept_deal_share, is_platform_admin) were executable by anon
+  (the in-function guard blocked them, but as the only layer). Execute is now
+  revoked from public + anon and granted only to authenticated + service_role —
+  defence in depth.
+- Added to the repo so the security model is reviewable and rebuildable:
+  - supabase/tests/security_audit.sql — static audit, one row per violation
+    (empty = pass).
+  - supabase/tests/rls_isolation.sql — runtime isolation test (non-member sees
+    nothing), rolled back.
+  - docs/SECURITY.md — the posture, the privileged-function guards, the sharing
+    model, how to verify, and known gaps.
 
-No migration — reuses the lots table. The embedded AI is unnamed for now (pending
-a brandable, trademark-clear name — "Oracle" is taken by Oracle Corp).
+Context: unlike some sibling repos, Terravado already keeps ALL database rules in
+migrations (no dashboard-only rules) and uses no service-role key in app code —
+privileged work is a handful of guarded database functions. This pass closes the
+anon-execute gap and puts the checks in the repo.
 
-Verified: tsc --noEmit clean · verify:engine 20/20 · next build green · parser
-spot-checked on sample stock-list lines.
+Verified: migration 0019 applied; anon execute confirmed removed; audit returns
+0 violations; isolation test passes; verify:engine 20/20; next build green.
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV

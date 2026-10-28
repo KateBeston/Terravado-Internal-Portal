@@ -4,6 +4,7 @@ import { getDevelopment, listLots } from "@/lib/domain/service";
 import { updateDevelopmentAction, deleteDevelopmentAction, createLotAction, deleteLotAction } from "@/app/actions";
 import { LOT_STATUS } from "@/lib/domain/types";
 import StockImport from "@/components/StockImport";
+import { STOCK_EXTRACTION_CONFIGURED } from "@/lib/integrations/extraction";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -84,7 +85,7 @@ export default async function DevelopmentPage({ params }: { params: { id: string
 
       <div className="panel">
         <h2>Import from stock list</h2>
-        <StockImport developmentId={d.id} />
+        <StockImport developmentId={d.id} aiEnabled={STOCK_EXTRACTION_CONFIGURED} />
       </div>
 
       <div className="panel">

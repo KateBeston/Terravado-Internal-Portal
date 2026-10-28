@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { importLotsAction } from "@/app/actions";
+import { importLotsAction, extractStockAction } from "@/app/actions";
 
 /* Paste a stock list (copied from the developer's PDF or a spreadsheet); it is
    parsed into an editable table you confirm before the lots are created. Fuzzy
@@ -59,14 +59,39 @@ function parseLine(line: string): Row {
   return r;
 }
 
-export default function StockImport({ developmentId }: { developmentId: string }) {
+const rowFromExtracted = (e: any): Row => ({
+  lotNumber: e?.lotNumber != null ? String(e.lotNumber) : "",
+  address: e?.address != null ? String(e.address) : "",
+  stage: e?.stage != null ? String(e.stage) : "",
+  price: e?.price != null ? String(e.price) : "",
+  beds: e?.beds != null ? String(e.beds) : "",
+  baths: e?.baths != null ? String(e.baths) : "",
+  landSize: e?.landSize != null ? String(e.landSize) : "",
+  advertisedRent: e?.advertisedRent != null ? String(e.advertisedRent) : "",
+  advertisedYieldPct: e?.advertisedYieldPct != null ? String(e.advertisedYieldPct) : "",
+});
+
+export default function StockImport({ developmentId, aiEnabled = false }: { developmentId: string; aiEnabled?: boolean }) {
   const [text, setText] = useState("");
   const [rows, setRows] = useState<Row[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
   const parse = () => {
     const parsed = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).filter((l) => !isHeader(l)).map(parseLine)
       .filter((r) => r.price || r.lotNumber || r.address);
     setRows(parsed.length ? parsed : [blank()]);
+  };
+  const extract = async (file: File) => {
+    setBusy(true); setError("");
+    try {
+      const fd = new FormData(); fd.set("file", file);
+      const res = await extractStockAction(fd);
+      if (res.error) { setError(res.error); return; }
+      const mapped = (res.rows ?? []).map(rowFromExtracted).filter((r) => r.price || r.lotNumber || r.address);
+      setRows(mapped.length ? mapped : [blank()]);
+    } catch { setError("Extraction failed — try the paste option."); }
+    finally { setBusy(false); }
   };
   const setCell = (i: number, k: keyof Row, val: string) => setRows((rs) => rs.map((r, j) => (j === i ? { ...r, [k]: val } : r)));
   const removeRow = (i: number) => setRows((rs) => rs.filter((_, j) => j !== i));
@@ -75,12 +100,27 @@ export default function StockImport({ developmentId }: { developmentId: string }
     <div>
       {rows.length === 0 ? (
         <>
+          {aiEnabled && (
+            <div style={{ marginBottom: 14 }}>
+              <label className="f"><span>Upload the stock-list PDF (AI reads it)</span>
+                <input type="file" accept="application/pdf,image/*" disabled={busy}
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) extract(f); }} />
+              </label>
+              {busy && <p className="muted" style={{ fontSize: 12 }}>Reading the stock list…</p>}
+              <p className="muted" style={{ fontSize: 12 }}>Extracts the lots for you to confirm. Or paste the list below.</p>
+            </div>
+          )}
           <label className="f"><span>Paste the stock list (from the PDF or a spreadsheet — one lot per line)</span>
             <textarea value={text} onChange={(e) => setText(e.target.value)} rows={6}
               placeholder={"Lot 12\t14 Parkside Ave\tStage 3\t$742,000\t4\t2\t$560pw"} />
           </label>
-          <button type="button" className="btn" onClick={parse} disabled={!text.trim()}>Parse into rows</button>
-          <p className="muted" style={{ fontSize: 12 }}>Best-effort parse — you&apos;ll confirm and fix every row before anything is saved. Direct PDF upload with AI extraction feeds this same table once it&apos;s connected.</p>
+          <button type="button" className="btn" onClick={parse} disabled={!text.trim() || busy}>Parse into rows</button>
+          {error && <p className="err" style={{ fontSize: 12 }}>{error}</p>}
+          <p className="muted" style={{ fontSize: 12 }}>
+            {aiEnabled ? "AI extraction and paste both land in an editable table — " : "Best-effort parse — "}
+            you&apos;ll confirm and fix every row before anything is saved.
+            {!aiEnabled && " Direct PDF upload with AI extraction feeds this same table once it's connected."}
+          </p>
         </>
       ) : (
         <form action={importLotsAction}>

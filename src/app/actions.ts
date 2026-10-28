@@ -730,6 +730,23 @@ export async function deleteLotAction(fd: FormData) {
   const developmentId = s(fd, "developmentId");
   if (id) { await svc.removeLot(tenantId, id); if (developmentId) revalidatePath(`/stock/${developmentId}`); }
 }
+/* AI extraction: read an uploaded stock-list PDF/image into proposed lot rows
+   (returned to the confirm table — nothing is saved here). */
+export async function extractStockAction(fd: FormData): Promise<{ rows?: any[]; error?: string }> {
+  await requireUser();
+  const { getExtractionProvider } = await import("@/lib/integrations/extraction");
+  const file = fd.get("file");
+  if (!(file instanceof File) || file.size === 0) return { error: "No file uploaded." };
+  if (file.size > 8 * 1024 * 1024) return { error: "File too large (max 8MB)." };
+  try {
+    const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
+    const rows = await getExtractionProvider().extractLots({ base64, mediaType: file.type || "application/pdf", fileName: file.name });
+    return { rows };
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+}
+
 /* Bulk-create lots from the import confirm table (rows is a JSON array the
    StockImport component builds from pasted/extracted stock). */
 export async function importLotsAction(fd: FormData) {
