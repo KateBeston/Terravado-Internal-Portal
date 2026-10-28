@@ -7,6 +7,7 @@ import { SIMPOLOGY_CONFIGURED, NEXTGEN_CONFIGURED } from "./lodgement";
 import { DOMAIN_CONFIGURED } from "./listings";
 import { CDR_CONFIGURED } from "./bank-products";
 import { BANK_DATA_CONFIGURED } from "./bank-data";
+import { STOCK_EXTRACTION_CONFIGURED } from "./extraction";
 import { GOOGLE_MAPS_CONFIGURED } from "./maps";
 
 export interface IntegrationStatus {
@@ -56,6 +57,13 @@ export function integrationStatuses(): IntegrationStatus[] {
       fallback: "Manually-entered lender rates & fees",
       enables: "Auto-refresh lender rates & fees from banks",
       access: "Public CDR Product APIs — no paid key; build the poller",
+    },
+    {
+      key: "extraction", label: "AI stock-list extraction", category: "AI / document extraction",
+      configured: STOCK_EXTRACTION_CONFIGURED, envVar: "STOCK_EXTRACTION_PROVIDER",
+      fallback: "Paste-to-import with an editable confirm table",
+      enables: "Upload a developer stock-list PDF and auto-extract proposed lot rows to confirm",
+      access: "LLM API key (e.g. Anthropic); extract-then-confirm, not blind import",
     },
     {
       key: "bankdata", label: "Bank data (Open Banking)", category: "Client bank data / verification",

@@ -2,7 +2,7 @@
    layer above the repository. UI and server actions call these, never the
    repository directly. */
 import { getRepository } from "@/lib/data";
-import type { BusinessDocument, Client, Company, Contact, Development, EntityMember, Lender, Lodgement, Lot, OwnershipEntity, PersonDocument, Property, ReportSnapshot } from "./types";
+import type { AdvisorDeal, BusinessDocument, Client, Company, Contact, Development, EntityMember, Lender, Lodgement, Lot, OwnershipEntity, PersonDocument, Property, ReportSnapshot } from "./types";
 
 const uid = (): string =>
   globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : `id-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -136,6 +136,14 @@ export const addLot = (tenantId: string, input: Partial<Lot>): Promise<Lot> =>
 export const updateLot = (tenantId: string, id: string, patch: Partial<Lot>): Promise<Lot | null> =>
   getRepository().update<Lot>("lots", tenantId, id, patch);
 export const removeLot = (tenantId: string, id: string): Promise<boolean> => getRepository().remove("lots", tenantId, id);
+
+// --- Advisor deals (sales pipeline / commissions) ---
+export const listDeals = (tenantId: string): Promise<AdvisorDeal[]> => getRepository().list<AdvisorDeal>("advisor_deals", tenantId);
+export const addDeal = (tenantId: string, input: Partial<AdvisorDeal>): Promise<AdvisorDeal> =>
+  getRepository().create<AdvisorDeal>("advisor_deals", { ...input, id: uid(), tenantId, createdAt: nowISO() } as AdvisorDeal);
+export const updateDeal = (tenantId: string, id: string, patch: Partial<AdvisorDeal>): Promise<AdvisorDeal | null> =>
+  getRepository().update<AdvisorDeal>("advisor_deals", tenantId, id, { ...patch, updatedAt: nowISO() });
+export const removeDeal = (tenantId: string, id: string): Promise<boolean> => getRepository().remove("advisor_deals", tenantId, id);
 
 // --- Business documents (business development log) ---
 export const listBusinessDocs = (tenantId: string): Promise<BusinessDocument[]> =>

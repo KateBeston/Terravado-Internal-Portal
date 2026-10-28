@@ -730,6 +730,75 @@ export async function deleteLotAction(fd: FormData) {
   const developmentId = s(fd, "developmentId");
   if (id) { await svc.removeLot(tenantId, id); if (developmentId) revalidatePath(`/stock/${developmentId}`); }
 }
+/* Bulk-create lots from the import confirm table (rows is a JSON array the
+   StockImport component builds from pasted/extracted stock). */
+export async function importLotsAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const developmentId = s(fd, "developmentId");
+  const rowsRaw = s(fd, "rows");
+  if (!developmentId || !rowsRaw) return;
+  let rows: any[] = [];
+  try { rows = JSON.parse(rowsRaw); } catch { return; }
+  const str = (x: any) => { const t = typeof x === "string" ? x.trim() : x == null ? "" : String(x).trim(); return t === "" ? undefined : t; };
+  const num = (x: any) => { if (x === undefined || x === null || x === "") return undefined; const v = Number(String(x).replace(/[,$\s]/g, "")); return isFinite(v) ? v : undefined; };
+  for (const r of Array.isArray(rows) ? rows : []) {
+    if (!r || (str(r.lotNumber) === undefined && str(r.address) === undefined && num(r.price) === undefined)) continue;
+    await svc.addLot(tenantId, {
+      developmentId, lotNumber: str(r.lotNumber), address: str(r.address), stage: str(r.stage),
+      price: num(r.price), status: "available",
+      beds: num(r.beds), baths: num(r.baths), cars: num(r.cars), landSize: num(r.landSize),
+      advertisedRent: num(r.advertisedRent), advertisedYieldPct: num(r.advertisedYieldPct),
+    });
+  }
+  revalidatePath(`/stock/${developmentId}`);
+}
+
+// --- Advisor deals (sales pipeline / commissions) ---
+export async function createDealAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  let salePrice = n(fd, "salePrice");
+  const lotId = s(fd, "lotId");
+  const label = s(fd, "propertyLabel");
+  if (!salePrice && !lotId && !label) return;
+  let developmentId = s(fd, "developmentId");
+  let commissionPct = n(fd, "commissionPct");
+  let commissionFlat = n(fd, "commissionFlat");
+  // Resolve development + default sale price and commission from the chosen lot.
+  if (lotId) {
+    const lot = await svc.getLot(tenantId, lotId);
+    if (lot) {
+      developmentId = developmentId ?? lot.developmentId;
+      if (salePrice === undefined) salePrice = lot.price;
+      if (commissionPct === undefined && commissionFlat === undefined && lot.developmentId) {
+        const dev = await svc.getDevelopment(tenantId, lot.developmentId);
+        commissionPct = dev?.commissionPct; commissionFlat = dev?.commissionFlat;
+      }
+    }
+  }
+  await svc.addDeal(tenantId, {
+    lotId, developmentId, clientId: s(fd, "clientId"),
+    propertyLabel: label, salePrice, commissionPct, commissionFlat,
+    stage: s(fd, "stage") ?? "lead", expectedSettlement: s(fd, "expectedSettlement"), notes: s(fd, "notes"),
+  });
+  revalidatePath("/pipeline");
+}
+export async function updateDealStageAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id");
+  const stage = s(fd, "stage");
+  if (!id || !stage) return;
+  await svc.updateDeal(tenantId, id, { stage });
+  revalidatePath("/pipeline");
+}
+export async function deleteDealAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id");
+  if (id) { await svc.removeDeal(tenantId, id); revalidatePath("/pipeline"); }
+}
 
 // --- Deal sharing (external guests) ---
 export async function createShareAction(fd: FormData) {

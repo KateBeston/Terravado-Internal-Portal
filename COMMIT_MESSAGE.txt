@@ -1,25 +1,28 @@
-feat(match): stock matching engine — rank developer stock against a client's capacity & criteria
+feat(stock): stock-list import — paste-and-confirm lot entry, with an AI-extraction seam for PDFs
 
 INTERNAL PORTAL.
 
-The property-matching wedge: score the stock list (lots) against a client's
-buying position and surface the best-fit lots. Indicative ranking, not advice.
+Completes the stock module's loose end: loading a development's stock without
+typing each lot.
 
-- lib/matching — matchStock(items, criteria) scores each available/under-offer
-  lot on affordability (client's borrowing capacity + deposit — the strongest
-  factor), yield (advertised, or derived from rent/price vs target), preferred
-  state, and minimum beds; returns a 0-100 score, a verdict (strong / possible /
-  stretch, never "strong" if over budget) and plain-language reasons.
-- /match page (nav "Match", gated on the stock capability): pick a borrower, set
-  deposit + criteria (target yield, state, min beds); borrowing capacity is
-  computed from their serviceability position (assessPosition over their derived
-  finances), max purchase = capacity + deposit, and the stock is ranked with
-  score, verdict and the why.
+- StockImport on the development record: paste the stock list (copied from the
+  developer's PDF or a spreadsheet), it parses each line into an editable confirm
+  table (lot number, address, stage, price, beds, baths, land, rent, yield), you
+  fix anything, then bulk-create the lots. Best-effort parse by design — every
+  developer's layout differs — so every field is editable before saving and
+  nothing imports blind. Delimiter and number handling cope with tabs, CSV,
+  multi-space columns, thousands-commas and "$560pw"-style rent.
+- importLotsAction bulk-creates the confirmed rows under the development.
+- Extraction provider seam (lib/integrations/extraction), config-gated on
+  STOCK_EXTRACTION_PROVIDER, registered on the Integrations page: when an LLM key
+  is connected, a PDF upload will auto-extract rows into the same confirm table.
+  Until then the paste path carries the feature. .env.example documents the var.
 
-No migration — reads clients, developments and lots. Next in the module: the
-commission calculator, commission/revenue tracker and advisor deal pipeline.
+No migration — reuses the lots table. The embedded AI is unnamed for now (pending
+a brandable, trademark-clear name — "Oracle" is taken by Oracle Corp).
 
-Verified: tsc --noEmit clean · verify:engine 20/20 · next build green.
+Verified: tsc --noEmit clean · verify:engine 20/20 · next build green · parser
+spot-checked on sample stock-list lines.
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV

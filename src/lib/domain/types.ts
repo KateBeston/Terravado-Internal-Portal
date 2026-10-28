@@ -353,6 +353,34 @@ export interface Lot extends Entity {
   notes?: string;
 }
 
+/* Advisor sales pipeline — a sale-in-progress of a lot (or labelled property)
+   to a client, tracked by stage, with its commission. */
+export const DEAL_STAGES = [
+  "lead", "reserved", "awaiting_pre_approval", "awaiting_finance", "contract_exchanged",
+  "awaiting_title_registration", "awaiting_settlement", "settled", "lost",
+] as const;
+
+export interface AdvisorDeal extends Entity {
+  lotId?: string;
+  developmentId?: string;
+  clientId?: string;
+  propertyLabel?: string;
+  salePrice?: number;
+  commissionPct?: number;
+  commissionFlat?: number;
+  stage?: string;
+  expectedSettlement?: string;
+  notes?: string;
+  updatedAt?: string;
+}
+
+/** Commission payable on a deal — flat amount if set, else sale price × rate. */
+export function commissionFor(d: AdvisorDeal): number {
+  if (d.commissionFlat) return d.commissionFlat;
+  if (d.commissionPct && d.salePrice) return (d.salePrice * d.commissionPct) / 100;
+  return 0;
+}
+
 export type BusinessDocStatus = "active" | "draft" | "archived";
 
 export interface BusinessDocument extends Entity {

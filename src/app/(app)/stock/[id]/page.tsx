@@ -3,6 +3,7 @@ import { getCurrentTenant } from "@/lib/auth/tenant";
 import { getDevelopment, listLots } from "@/lib/domain/service";
 import { updateDevelopmentAction, deleteDevelopmentAction, createLotAction, deleteLotAction } from "@/app/actions";
 import { LOT_STATUS } from "@/lib/domain/types";
+import StockImport from "@/components/StockImport";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -79,6 +80,11 @@ export default async function DevelopmentPage({ params }: { params: { id: string
             {lots.length === 0 && <tr><td colSpan={8} className="muted">No lots yet — add them from the stock list below.</td></tr>}
           </tbody>
         </table>
+      </div>
+
+      <div className="panel">
+        <h2>Import from stock list</h2>
+        <StockImport developmentId={d.id} />
       </div>
 
       <div className="panel">
