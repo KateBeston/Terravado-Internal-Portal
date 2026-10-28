@@ -22,6 +22,7 @@ const LINKS: [string, string, string?][] = [
   ["/finance", "Finance", "finance"],
   ["/lodgements", "Lodgements", "lodgement"],
   ["/data-sources", "Data Sources", "integrations"],
+  ["/regulatory-watch", "Regulatory Watch", "integrations"],
   ["/business", "The Business", "business"],
   ["/shared", "Shared with me"],
   ["/account", "Account"],
@@ -29,7 +30,7 @@ const LINKS: [string, string, string?][] = [
 
 interface NavUser { name: string; email: string; isDev: boolean; }
 
-export default function Nav({ user, recordId, caps, isAdmin, engineVersion, taxVersion }: { user: NavUser | null; recordId?: string | null; caps?: string[]; isAdmin?: boolean; engineVersion: string; taxVersion: string; }) {
+export default function Nav({ user, recordId, caps, isAdmin, engineVersion, taxVersion, regUnread }: { user: NavUser | null; recordId?: string | null; caps?: string[]; isAdmin?: boolean; engineVersion: string; taxVersion: string; regUnread?: number; }) {
   const path = usePathname();
   const active = (href: string) => (href === "/" ? path === "/" : path.startsWith(href));
   const allowed = (cap?: string) => !cap || !caps || caps.includes(cap);
@@ -43,6 +44,7 @@ export default function Nav({ user, recordId, caps, isAdmin, engineVersion, taxV
       {links.map(([href, label]) => (
         <Link key={href} href={href} className={`link${active(href) ? " on" : ""}`}>
           {label}
+          {href === "/regulatory-watch" && regUnread ? <span className="badge" style={{ marginLeft: 6, color: "#b03a2e", borderColor: "#b03a2e", fontSize: 10 }}>{regUnread}</span> : null}
         </Link>
       ))}
       {isAdmin && (

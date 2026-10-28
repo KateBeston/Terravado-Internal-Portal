@@ -1,29 +1,32 @@
-Add the CGT / disposal engine + a Sale/CGT tab (INTERNAL-PORTAL)
+Add the Regulatory Watch + alert system (INTERNAL-PORTAL)
 
-The biggest modelling gap from the tax review: Terravado modelled the hold but
-had no sell-side. This adds a full capital-gains engine and surfaces it on the
-property record.
+Fortnightly monitoring of the regulators that touch property, lending, financial
+services, real estate, AML, trusts and accounting, with in-portal alerts.
 
-Engine (src/lib/engine/cgt.ts) — disposalCgt():
-- Capital proceeds (sale price − selling costs); cost base (purchase + acquisition
-  + improvements + third-element holding costs − Div 43 claimed).
-- Main residence exemption (full or partial / 6-year rule); carried-forward
-  capital losses applied before the discount.
-- CGT discount: 50% individuals/trusts, 1/3 SMSF, nil company — only if held
-  >12 months and not a foreign resident.
-- CGT payable at the owner's marginal rate / 30% company / 15% SMSF.
-- Foreign resident: no discount, no main-residence exemption, and 15% FRCGW
-  withheld at settlement (from 1 Jan 2025, no threshold).
-- Capital-loss case carries forward. cgtEntityOf() maps an entity's kind.
+What's new
+- Sources registry (src/lib/integrations/regwatch) — seeded bodies (ASIC, APRA,
+  ACCC, RBA, AUSTRAC, ATO, TPB, Revenue NSW, SRO Vic, NSW Fair Trading) each with
+  a category and an RSS/newsroom feed; overridable via REGWATCH_SOURCES. An
+  RSS/Atom parser + collectRegulatoryItems() fetches all, parses, and skips any
+  source that's unreachable or unparseable.
+- regulatory_alerts table (migration 0023) — shared public-data feed,
+  de-duplicated by url; RLS lets any signed-in user read, refresh and acknowledge.
+- /regulatory-watch page (nav "Regulatory Watch", gated on integrations): Check
+  now, mark-all-read, category filters, the alert list with source links and
+  per-row mark-read. A nav badge shows the unread count.
+- Fortnightly automation: /api/regwatch + a Vercel Cron (1st & 15th). The cron is
+  the one isolated, env-gated service-role path, for PUBLIC data only — inert
+  unless CRON_SECRET + the service key are set; the authenticated "Check now" is
+  the primary path. It surfaces that something changed and links to it; it does
+  not interpret the law.
 
-UI — /properties/[id]/sale ("Sale / CGT" tab): a what-if calculator defaulted
-from the record (duty via the engine, entity from ownership), with the full
-cost-base-to-net-proceeds breakdown and explanatory notes.
+Honesty / verification
+- tsc clean; build green. Booted next start: /regulatory-watch -> 200;
+  /api/regwatch -> 401 without the secret.
+- The build sandbox can't reach the regulator sites, so the feed fills in once
+  deployed (Vercel can); it degrades to an empty feed, never errors.
 
-Assurance: 4 new known-answer checks (individual 50% → $39k; company → $60k;
-SMSF 1/3 → $30k; FRCGW 15% → $120k). Suite now 27/27.
-
-Verified: tsc clean; verify:engine 27/27; build green.
+See project docs terravado-regulatory-compliance-review.md (section 9 design).
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV

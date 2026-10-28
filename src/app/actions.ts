@@ -819,6 +819,28 @@ export async function deleteDevelopmentAction(fd: FormData) {
   if (id) { await svc.removeDevelopment(tenantId, id); revalidatePath("/stock"); }
 }
 
+// --- Regulatory Watch: refresh the feed and acknowledge alerts ---
+export async function runRegWatchAction() {
+  await requireUser();
+  const { collectRegulatoryItems } = await import("@/lib/integrations/regwatch");
+  const { persistRegulatoryItems } = await import("@/lib/regwatch/store");
+  const { items } = await collectRegulatoryItems();
+  await persistRegulatoryItems(items);
+  revalidatePath("/regulatory-watch");
+}
+export async function acknowledgeRegAlertAction(fd: FormData) {
+  await requireUser();
+  const id = s(fd, "id");
+  if (!id) return;
+  try { await createClient().from("regulatory_alerts").update({ acknowledged: true }).eq("id", id); } catch { /* noop */ }
+  revalidatePath("/regulatory-watch");
+}
+export async function acknowledgeAllRegAction() {
+  await requireUser();
+  try { await createClient().from("regulatory_alerts").update({ acknowledged: true }).eq("acknowledged", false); } catch { /* noop */ }
+  revalidatePath("/regulatory-watch");
+}
+
 // --- Data sources: run the live checks and log the outcome ---
 export async function checkDataSourcesAction() {
   await requireUser();
