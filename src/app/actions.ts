@@ -853,6 +853,37 @@ export async function acceptShareAction(fd: FormData) {
   if (error) redirect("/shared?error=1");
   redirect(data ? `/shared/${data}` : "/shared");
 }
+// Collaborate contributions on a shared deal (guarded RPCs; host or collaborator).
+export async function addDealNoteAction(fd: FormData) {
+  await requireUser();
+  const clientId = s(fd, "clientId");
+  const body = s(fd, "body");
+  if (!clientId || !body) return;
+  await createClient().rpc("add_deal_note", { p_client: clientId, p_body: body });
+  revalidatePath(`/shared/${clientId}`);
+  revalidatePath(`/contacts/${clientId}/sharing`);
+}
+export async function addDealDocumentAction(fd: FormData) {
+  await requireUser();
+  const clientId = s(fd, "clientId");
+  if (!clientId) return;
+  await createClient().rpc("add_deal_document", {
+    p_client: clientId, p_name: s(fd, "name") ?? "Document", p_kind: s(fd, "kind") ?? null, p_link: s(fd, "storagePath") ?? null,
+  });
+  revalidatePath(`/shared/${clientId}`);
+}
+export async function collabSaveFinancesAction(fd: FormData) {
+  await requireUser();
+  const clientId = s(fd, "clientId");
+  if (!clientId) return;
+  const finances = {
+    grossIncome: n(fd, "grossIncome"), partnerIncome: n(fd, "partnerIncome"),
+    livingExpMonthly: n(fd, "livingExpMonthly"), dependants: n(fd, "dependants"),
+    monthlyCommitments: n(fd, "monthlyCommitments"), cardLimits: n(fd, "cardLimits"), hecsBalance: n(fd, "hecsBalance"),
+  };
+  await createClient().rpc("collab_update_finances", { p_client: clientId, p_finances: finances });
+  revalidatePath(`/shared/${clientId}`);
+}
 
 // --- Ownership entities ---
 export async function createEntityAction(fd: FormData) {

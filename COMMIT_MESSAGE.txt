@@ -1,34 +1,30 @@
-chore(security): tighten access control — anon locked out of privileged functions, security audit + RLS tests in the repo
+feat(sharing): collaborate (write) access for guests — notes, documents, financials on a shared deal
 
 INTERNAL PORTAL.
 
-Hardening pass after a security review. Findings and fixes:
+Finishes the first half of portal sharing: a guest whose share is
+permission='collaborate' can now contribute to the shared deal, not just view it.
 
-- Audit (clean): every table has RLS; tenant data is scoped by
-  current_user_tenants(); no permissive `using (true)` policies (bar the
-  intentional shared market-data read); every tenant table is policied; every
-  SECURITY DEFINER function carries a guard. Runtime proof: an impersonated
-  non-member sees 0 rows across contacts/properties/deals/developments/etc.
-- Fix (migration 0019): the privileged SECURITY DEFINER functions (admin_*,
-  tenant_members, accept_deal_share, is_platform_admin) were executable by anon
-  (the in-function guard blocked them, but as the only layer). Execute is now
-  revoked from public + anon and granted only to authenticated + service_role —
-  defence in depth.
-- Added to the repo so the security model is reviewable and rebuildable:
-  - supabase/tests/security_audit.sql — static audit, one row per violation
-    (empty = pass).
-  - supabase/tests/rls_isolation.sql — runtime isolation test (non-member sees
-    nothing), rolled back.
-  - docs/SECURITY.md — the posture, the privileged-function guards, the sharing
-    model, how to verify, and known gaps.
+- Guest (on /shared/[clientId], when collaborate): edit the serviceability
+  financials, add documents, and post deal notes. View-only guests still get the
+  read-only view.
+- Deal notes: a shared thread on the deal, visible to the host and all shared
+  parties. The host posts and reads it on the person record's Sharing tab; the
+  guest on the shared deal view.
+- All writes go through guarded SECURITY DEFINER functions that check the caller
+  is a collaborator on that specific deal (or, for notes, the host) — add_deal_note,
+  add_deal_document, collab_update_finances — rather than broad cross-tenant write
+  policies. The guest never needs the host's tenant id. collab_update_finances
+  shallow-merges so structured income/liability lists survive.
 
-Context: unlike some sibling repos, Terravado already keeps ALL database rules in
-migrations (no dashboard-only rules) and uses no service-role key in app code —
-privileged work is a handful of guarded database functions. This pass closes the
-anon-execute gap and puts the checks in the repo.
+Migration 0020 (applied): collaborate_client_ids(); deal_notes table (+RLS read
+for host or shared party); the three write functions; execute locked to
+authenticated + service_role (per the 0019 hardening).
 
-Verified: migration 0019 applied; anon execute confirmed removed; audit returns
-0 violations; isolation test passes; verify:engine 20/20; next build green.
+Security audit re-run after the change: 0 violations; runtime isolation still
+holds. Next: brand-new-user invites (provision a login from an invite link).
+
+Verified: tsc --noEmit clean · verify:engine 20/20 · next build green · audit 0.
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV
