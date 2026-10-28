@@ -24,7 +24,7 @@ export interface MapProps {
 }
 
 type MetricKey = "growthPct" | "popGrowthPct" | "jobGrowthPct" | "population";
-type Level = "state" | "sa4" | "sa3";
+type Level = "state" | "sa4" | "sa3" | "lga";
 const METRICS: { key: MetricKey; label: string; unit: string; dp: number }[] = [
   { key: "growthPct", label: "Property growth", unit: "% p.a.", dp: 1 },
   { key: "popGrowthPct", label: "Population growth (ABS)", unit: "% p.a.", dp: 1 },
@@ -35,6 +35,7 @@ const LEVELS: { key: Level; label: string; file?: string }[] = [
   { key: "state", label: "State / Territory" },
   { key: "sa4", label: "SA4 — region", file: "/geo/sa4.json" },
   { key: "sa3", label: "SA3 — region", file: "/geo/sa3.json" },
+  { key: "lga", label: "LGA — council", file: "/geo/lga.json" },
 ];
 const SCALE = ["#2c5f9e", "#7FA8D0", "#EADFCE", "#D98C5F", "#B23A2E"]; // low → high : blue → white → red
 const NODATA = "#e6e2d8";
@@ -173,7 +174,7 @@ export default function AustraliaMap({ geojson, data, overlays, devTypes, absNot
             </select>
           </div>
           {loading && <p className="muted" style={{ fontSize: 11, marginTop: 6 }}>Loading boundaries…</p>}
-          {isFiner && <p className="muted" style={{ fontSize: 11, marginTop: 6 }}>Regions coloured by an <strong>indicative</strong> value — not sourced. Connect ABS Regional Population / CoreLogic for real regional growth. Suburb &amp; council levels to follow.</p>}
+          {isFiner && <p className="muted" style={{ fontSize: 11, marginTop: 6 }}>Regions coloured by an <strong>indicative</strong> value — not sourced. Connect ABS Regional Population / CoreLogic for real regional growth. Suburb level to follow.</p>}
         </div>
 
         <div className="panel">

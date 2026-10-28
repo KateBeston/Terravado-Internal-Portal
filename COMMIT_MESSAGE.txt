@@ -1,29 +1,27 @@
-Atlas map: SA4 & SA3 region boundaries with level selector + cascading filter (INTERNAL-PORTAL)
+Atlas map: add LGA (council) boundary level (INTERNAL-PORTAL)
 
-Turns the map from state-only into region drill-down using the ABS ASGS boundary
-files.
+Adds councils to the boundary-level selector — I sourced the LGA polygons myself
+since the data.gov.au file wasn't downloading for you.
 
 What's new
-- Boundary-level selector: State / Territory, SA4 region, SA3 region. Finer
-  levels load their GeoJSON on demand from /geo (not bundled), so the initial
-  map stays light.
-- Cascading "Filter to state" — at a finer level, choosing a state shows only
-  that state's regions and zooms to it. Clicking a region zooms to it.
-- ABS ASGS Edition 3 boundaries ingested: SA4 (108) and SA3 (359), converted
-  from the ABS Shapefiles, simplified and slimmed to code / name / state (+ SA4
-  parent on SA3), ~1.1 MB each, served as static files under public/geo.
-- Honesty: finer levels are coloured by an INDICATIVE regional value (clearly
-  labelled, not sourced) until ABS Regional Population / CoreLogic are
-  connected. State level still uses the real/stub metrics + live ABS.
+- "LGA — council" level in the boundary selector (State / SA4 / SA3 / LGA),
+  loaded on demand from /geo/lga.json, with the same cascading state filter and
+  click-to-zoom as the other levels.
+- LGA boundaries (563 councils) sourced from the public npm package
+  `which-boundary` (ABS LGA shapefile, decoded from geobuf), simplified and
+  slimmed to code / name / state, ~1.3 MB, served from public/geo.
+- Finer-level note updated (councils now in; suburb level still to follow).
 
-Not included
-- LGA (council): the attachment supplied was a data.gov.au metadata record with
-  no data file, so LGA isn't wired yet — needs the actual LGA GeoJSON/Shapefile.
-- Suburb polygons deferred (too large to bundle; Search covers suburbs for now).
+Notes
+- These LGAs are the ABS 2016 edition (what that package ships) — council
+  boundaries are largely stable, fine for the map; swap in a newer ABS LGA file
+  later the same way if you want the latest.
+- Still coloured by an indicative value until real regional data (ABS Regional
+  Population / CoreLogic) is connected.
 
 Verification
 - tsc --noEmit clean; npm run build green.
-- Booted next start: /atlas/map → HTTP 200; /geo/sa4.json served (200, ~1.1 MB).
+- Booted next start: /atlas/map → HTTP 200; /geo/lga.json served (200, ~1.3 MB).
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV
