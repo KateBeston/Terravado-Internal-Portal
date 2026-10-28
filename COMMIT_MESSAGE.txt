@@ -1,19 +1,29 @@
-Update income tax to the 2026-27 scale (INTERNAL-PORTAL)
+Add the CGT / disposal engine + a Sale/CGT tab (INTERNAL-PORTAL)
 
-The engine was on the 2025-26 resident scale (16% bottom bracket); the current
-financial year (from 1 Jul 2026) dropped it to 15%.
+The biggest modelling gap from the tax review: Terravado modelled the hold but
+had no sell-side. This adds a full capital-gains engine and surfaces it on the
+property record.
 
-- tax-data.ts: version AU-2026-27, 2026-27 scale (15% on 18,201–45,000; bases
-  4,020 / 31,020 / 51,370), marginal rates 0/17/32/39/47 incl. Medicare. The
-  2025-26 figures are noted for prior-version retention; legislated 14% follows
-  1 Jul 2027.
-- Assurance known-answer checks updated to the 2026-27 answers ($100k → $22,520;
-  $200k → $59,870) so an incorrect future update fails CI.
+Engine (src/lib/engine/cgt.ts) — disposalCgt():
+- Capital proceeds (sale price − selling costs); cost base (purchase + acquisition
+  + improvements + third-element holding costs − Div 43 claimed).
+- Main residence exemption (full or partial / 6-year rule); carried-forward
+  capital losses applied before the discount.
+- CGT discount: 50% individuals/trusts, 1/3 SMSF, nil company — only if held
+  >12 months and not a foreign resident.
+- CGT payable at the owner's marginal rate / 30% company / 15% SMSF.
+- Foreign resident: no discount, no main-residence exemption, and 15% FRCGW
+  withheld at settlement (from 1 Jan 2025, no threshold).
+- Capital-loss case carries forward. cgtEntityOf() maps an entity's kind.
 
-Part of the tax & legislation review (see project docs
-terravado-tax-legislation-review.md and terravado-regulatory-compliance-review.md).
+UI — /properties/[id]/sale ("Sale / CGT" tab): a what-if calculator defaulted
+from the record (duty via the engine, entity from ownership), with the full
+cost-base-to-net-proceeds breakdown and explanatory notes.
 
-Verified: tsc clean; verify:engine 23/23; build green.
+Assurance: 4 new known-answer checks (individual 50% → $39k; company → $60k;
+SMSF 1/3 → $30k; FRCGW 15% → $120k). Suite now 27/27.
+
+Verified: tsc clean; verify:engine 27/27; build green.
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV

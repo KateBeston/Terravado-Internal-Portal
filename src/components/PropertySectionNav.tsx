@@ -14,6 +14,7 @@ const TABS: { slug: string; label: string }[] = [
   { slug: "physical", label: "Physical" },
   { slug: "financials", label: "Financials" },
   { slug: "depreciation", label: "Depreciation" },
+  { slug: "sale", label: "Sale / CGT" },
   { slug: "modelling", label: "Modelling" },
 ];
 

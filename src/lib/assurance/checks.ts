@@ -13,6 +13,7 @@
 import { TAX_DATA } from "../engine/tax-data";
 import { aggregateLandTax } from "../engine/landtax";
 import { modelDepreciation } from "../engine/depreciation";
+import { disposalCgt } from "../engine/cgt";
 import { seedContext } from "../engine/seeds";
 import {
   project, monteCarlo, feasibility, serviceability, valuation, equityChain,
@@ -79,6 +80,14 @@ const referenceChecks: CheckDef[] = [
     8000, () => modelDepreciation({ mode: "assumed", constructionCost: 320000, buildYear: 2015 }, 1).rows[0].div43),
   ref("dep-div40-dv-y1", "Depreciation", "Div 40 diminishing value: $5,000 asset, 10-yr life → $1,000 year 1", "ATO — Div 40 diminishing value (200%/life)",
     1000, () => modelDepreciation({ mode: "schedule", div40: [{ name: "Asset", value: 5000, life: 10, method: "Diminishing value" }] }, 1).rows[0].div40),
+  ref("cgt-individual-50pc", "CGT", "Individual, $200k gain held >12m at 39% marginal → $39,000 (50% discount)", "ATO — CGT 50% discount",
+    39000, () => disposalCgt({ entityType: "individual", salePrice: 800000, purchasePrice: 600000, heldMonths: 24, marginalRatePct: 39 }).cgtPayable),
+  ref("cgt-company-nodisc", "CGT", "Company, $200k gain → $60,000 (no discount, 30%)", "ATO — company CGT",
+    60000, () => disposalCgt({ entityType: "company", salePrice: 800000, purchasePrice: 600000, heldMonths: 24 }).cgtPayable),
+  ref("cgt-smsf-third", "CGT", "SMSF, $300k gain held >12m → $30,000 (1/3 discount, 15%)", "ATO — SMSF CGT (effective 10%)",
+    30000, () => disposalCgt({ entityType: "smsf", salePrice: 900000, purchasePrice: 600000, heldMonths: 24 }).cgtPayable),
+  ref("frcgw-15pc", "CGT", "Foreign resident: 15% FRCGW on $800k sale → $120,000 withheld", "ATO — FRCGW (15%, from 1 Jan 2025)",
+    120000, () => disposalCgt({ entityType: "individual", salePrice: 800000, purchasePrice: 600000, heldMonths: 24, foreignResident: true }).frcgwWithheld),
   ref("inctax-au-100k", "Income tax", "AU income tax + Medicare on $100,000", "ATO — individual rates 2026–27", 22520, () => TAX_DATA.incomeTax.AU(100000)),
   ref("inctax-au-200k", "Income tax", "AU income tax + Medicare on $200,000", "ATO — individual rates 2026–27", 59870, () => TAX_DATA.incomeTax.AU(200000)),
   {
