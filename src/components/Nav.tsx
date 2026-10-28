@@ -20,7 +20,7 @@ const LINKS: [string, string, string?][] = [
   ["/pipeline", "Pipeline", "stock"],
   ["/finance", "Finance", "finance"],
   ["/lodgements", "Lodgements", "lodgement"],
-  ["/integrations", "Integrations", "integrations"],
+  ["/data-sources", "Data Sources", "integrations"],
   ["/business", "The Business", "business"],
   ["/shared", "Shared with me"],
   ["/account", "Account"],

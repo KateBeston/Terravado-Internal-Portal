@@ -373,6 +373,14 @@ export interface FeasibilityRecord extends Entity {
   data: Record<string, unknown>;
 }
 
+/* An entry in the Data Sources activity log — a check or refresh of an external
+   data source and whether it ran live or fell back. */
+export interface DataSourceEvent extends Entity {
+  sourceKey?: string;
+  status?: string;   // live / fallback / error / disabled
+  detail?: string;
+}
+
 export const LOT_STATUS = ["available", "under_offer", "sold", "settled", "withdrawn"] as const;
 
 /* One lot / property of stock under a development. Carries the marketed figures

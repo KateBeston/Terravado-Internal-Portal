@@ -1,27 +1,26 @@
-Wire live CDR product data into the Lenders page (INTERNAL-PORTAL)
+Add a Data Sources section to manage and log all data sources (INTERNAL-PORTAL)
 
-Pulls residential-mortgage product rates & fees from the public CDR Product
-Reference Data APIs (no key, no consent, no accreditation) and shows them on the
-Lenders page. Live by default; degrades to a clear note (never errors) if a bank
-is unreachable.
+One place to see every external source Terravado draws on, its live/fallback
+status, how to connect it, and an activity log of the live checks.
 
-How it works
-- CDR is federated — each ADI exposes its own base URI — so a configurable list
-  of banks is polled server-side: products (x-v:3) then a representative
-  product's detail (x-v:4) for the variable rate, comparison rate and annual fee.
-  Per-bank failures are skipped; result cached 6h.
-- "Live product rates — CDR Open Banking" panel on /lenders lists what came back
-  with a status note (how many banks returned).
-- Env: CDR_PRODUCTS_ENABLED=off disables it; CDR_BANKS (JSON array of
-  {brand, base}) overrides the bank list.
+What's new
+- /data-sources (nav "Data Sources", gated on the integrations capability):
+  - Live health cards for the sources that fetch at runtime (ABS, CDR) showing
+    live vs fallback and the as-at / banks-returned.
+  - "Check now & log" — runs the live ABS + CDR fetches and writes the outcome
+    to the activity log.
+  - All sources table from the integration registry: status badge, category,
+    what it enables, and the env var / access needed to connect it.
+  - Activity log of recent checks (live / fallback / error, with detail).
+- data_source_events table (migration 0022), tenant-scoped RLS; service +
+  checkDataSourcesAction.
+- Integrations folded in: /integrations now redirects to /data-sources (the map
+  and Smart Search "See Integrations" links still work).
 
-Honesty / verification
-- tsc clean; build green. Booted next start: /lenders → HTTP 200, panel renders.
-- The build sandbox can't reach the bank endpoints, so I verified the fallback
-  (panel shows "No banks returned products"). On Vercel the live poll runs. The
-  default bank base URIs are best-effort — if any are wrong those banks just
-  don't appear; set CDR_BANKS to the confirmed ACCC-register base URIs to fix,
-  no code change.
+Verification
+- tsc --noEmit clean; npm run build green.
+- Booted next start: /data-sources → HTTP 200 (Live health, All sources,
+  Activity log render); /integrations → 307 redirect.
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV

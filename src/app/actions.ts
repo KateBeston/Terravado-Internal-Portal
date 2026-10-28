@@ -14,6 +14,8 @@ import { getPropertyDataProvider } from "@/lib/integrations/property-data";
 import { assembleDealPack } from "@/lib/deal/pack";
 import { getLodgementProvider } from "@/lib/integrations/lodgement";
 import { smartSearchProperty } from "@/lib/integrations/smart-search";
+import { getAbsIndicators } from "@/lib/integrations/abs";
+import { getBankProducts } from "@/lib/integrations/bank-products";
 import type { LodgementStatus } from "@/lib/domain/types";
 
 const s = (fd: FormData, k: string): string | undefined => {
@@ -815,6 +817,21 @@ export async function deleteDevelopmentAction(fd: FormData) {
   const { tenantId } = await getCurrentTenant();
   const id = s(fd, "id");
   if (id) { await svc.removeDevelopment(tenantId, id); revalidatePath("/stock"); }
+}
+
+// --- Data sources: run the live checks and log the outcome ---
+export async function checkDataSourcesAction() {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  try {
+    const abs = await getAbsIndicators();
+    await svc.addDataSourceEvent(tenantId, { sourceKey: "abs", status: abs.live ? "live" : "fallback", detail: `${abs.source}${abs.live ? " · as at " + abs.asAt : ""}` });
+  } catch (e) { await svc.addDataSourceEvent(tenantId, { sourceKey: "abs", status: "error", detail: String((e as Error)?.message ?? e) }); }
+  try {
+    const cdr = await getBankProducts();
+    await svc.addDataSourceEvent(tenantId, { sourceKey: "cdr", status: cdr.banksReturned ? "live" : "fallback", detail: cdr.note });
+  } catch (e) { await svc.addDataSourceEvent(tenantId, { sourceKey: "cdr", status: "error", detail: String((e as Error)?.message ?? e) }); }
+  revalidatePath("/data-sources");
 }
 
 // --- Feasibilities (development feasibility studies) ---

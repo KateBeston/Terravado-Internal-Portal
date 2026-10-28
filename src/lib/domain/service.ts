@@ -2,7 +2,7 @@
    layer above the repository. UI and server actions call these, never the
    repository directly. */
 import { getRepository } from "@/lib/data";
-import type { AdvisorDeal, BusinessDocument, Client, Company, Contact, Development, EntityMember, FeasibilityRecord, Lender, Lodgement, Lot, OwnershipEntity, PersonDocument, Property, ReportSnapshot } from "./types";
+import type { AdvisorDeal, BusinessDocument, Client, Company, Contact, DataSourceEvent, Development, EntityMember, FeasibilityRecord, Lender, Lodgement, Lot, OwnershipEntity, PersonDocument, Property, ReportSnapshot } from "./types";
 
 const uid = (): string =>
   globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : `id-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -136,6 +136,11 @@ export const addFeasibility = (tenantId: string, input: { name?: string; data: R
 export const updateFeasibility = (tenantId: string, id: string, patch: Partial<FeasibilityRecord>): Promise<FeasibilityRecord | null> =>
   getRepository().update<FeasibilityRecord>("feasibilities", tenantId, id, patch);
 export const removeFeasibility = (tenantId: string, id: string): Promise<boolean> => getRepository().remove("feasibilities", tenantId, id);
+
+// --- Data source activity log ---
+export const listDataSourceEvents = (tenantId: string): Promise<DataSourceEvent[]> => getRepository().list<DataSourceEvent>("data_source_events", tenantId);
+export const addDataSourceEvent = (tenantId: string, input: { sourceKey?: string; status?: string; detail?: string }): Promise<DataSourceEvent> =>
+  getRepository().create<DataSourceEvent>("data_source_events", { ...input, id: uid(), tenantId, createdAt: nowISO() } as DataSourceEvent);
 
 // --- Lots (stock) ---
 export const listLots = (tenantId: string): Promise<Lot[]> => getRepository().list<Lot>("lots", tenantId);
