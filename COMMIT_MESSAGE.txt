@@ -1,26 +1,29 @@
-Add a Data Sources section to manage and log all data sources (INTERNAL-PORTAL)
+Atlas map: SA4 & SA3 region boundaries with level selector + cascading filter (INTERNAL-PORTAL)
 
-One place to see every external source Terravado draws on, its live/fallback
-status, how to connect it, and an activity log of the live checks.
+Turns the map from state-only into region drill-down using the ABS ASGS boundary
+files.
 
 What's new
-- /data-sources (nav "Data Sources", gated on the integrations capability):
-  - Live health cards for the sources that fetch at runtime (ABS, CDR) showing
-    live vs fallback and the as-at / banks-returned.
-  - "Check now & log" — runs the live ABS + CDR fetches and writes the outcome
-    to the activity log.
-  - All sources table from the integration registry: status badge, category,
-    what it enables, and the env var / access needed to connect it.
-  - Activity log of recent checks (live / fallback / error, with detail).
-- data_source_events table (migration 0022), tenant-scoped RLS; service +
-  checkDataSourcesAction.
-- Integrations folded in: /integrations now redirects to /data-sources (the map
-  and Smart Search "See Integrations" links still work).
+- Boundary-level selector: State / Territory, SA4 region, SA3 region. Finer
+  levels load their GeoJSON on demand from /geo (not bundled), so the initial
+  map stays light.
+- Cascading "Filter to state" — at a finer level, choosing a state shows only
+  that state's regions and zooms to it. Clicking a region zooms to it.
+- ABS ASGS Edition 3 boundaries ingested: SA4 (108) and SA3 (359), converted
+  from the ABS Shapefiles, simplified and slimmed to code / name / state (+ SA4
+  parent on SA3), ~1.1 MB each, served as static files under public/geo.
+- Honesty: finer levels are coloured by an INDICATIVE regional value (clearly
+  labelled, not sourced) until ABS Regional Population / CoreLogic are
+  connected. State level still uses the real/stub metrics + live ABS.
+
+Not included
+- LGA (council): the attachment supplied was a data.gov.au metadata record with
+  no data file, so LGA isn't wired yet — needs the actual LGA GeoJSON/Shapefile.
+- Suburb polygons deferred (too large to bundle; Search covers suburbs for now).
 
 Verification
 - tsc --noEmit clean; npm run build green.
-- Booted next start: /data-sources → HTTP 200 (Live health, All sources,
-  Activity log render); /integrations → 307 redirect.
+- Booted next start: /atlas/map → HTTP 200; /geo/sa4.json served (200, ~1.1 MB).
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV
