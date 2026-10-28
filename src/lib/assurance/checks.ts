@@ -12,6 +12,7 @@
 
 import { TAX_DATA } from "../engine/tax-data";
 import { aggregateLandTax } from "../engine/landtax";
+import { modelDepreciation } from "../engine/depreciation";
 import { seedContext } from "../engine/seeds";
 import {
   project, monteCarlo, feasibility, serviceability, valuation, equityChain,
@@ -74,6 +75,10 @@ const referenceChecks: CheckDef[] = [
       { id: "a", label: "A", region: "NSW", landValue: 800000, ownerKey: "e1", ownerName: "Trust", ownerKind: "Trust" },
       { id: "b", label: "B", region: "NSW", landValue: 800000, ownerKey: "e1", ownerName: "Trust", ownerKind: "Trust" },
     ]).totalAggregated),
+  ref("dep-div43-2_5pct", "Depreciation", "Div 43 capital works: $320k construction, post-1987 → $8,000 year 1", "ATO — Div 43 capital works (2.5% p.a.)",
+    8000, () => modelDepreciation({ mode: "assumed", constructionCost: 320000, buildYear: 2015 }, 1).rows[0].div43),
+  ref("dep-div40-dv-y1", "Depreciation", "Div 40 diminishing value: $5,000 asset, 10-yr life → $1,000 year 1", "ATO — Div 40 diminishing value (200%/life)",
+    1000, () => modelDepreciation({ mode: "schedule", div40: [{ name: "Asset", value: 5000, life: 10, method: "Diminishing value" }] }, 1).rows[0].div40),
   ref("inctax-au-100k", "Income tax", "AU income tax + Medicare on $100,000", "ATO — individual rates 2025–26", 22788, () => TAX_DATA.incomeTax.AU(100000)),
   ref("inctax-au-200k", "Income tax", "AU income tax + Medicare on $200,000", "ATO — individual rates 2025–26", 60138, () => TAX_DATA.incomeTax.AU(200000)),
   {

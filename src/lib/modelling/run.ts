@@ -104,9 +104,19 @@ function core(inp: ModelInputs): Core {
     if (m.annualPackageFee !== undefined) p.loan.annualPackageFee = m.annualPackageFee;
     if (m.otherPurchaseCosts !== undefined) p.entry.items = [{ id: "e_other", name: "Acquisition costs", amount: m.otherPurchaseCosts }];
     if (m.capitaliseLmi !== undefined) p.entry.capitaliseLmi = m.capitaliseLmi;
-    if (m.depMode) p.dep.mode = m.depMode;
+    if (m.depMode) p.dep.mode = m.depMode === "none" ? "schedule" : m.depMode;
     if (m.plantValue !== undefined) { p.dep.plantValue = m.plantValue; p.dep.plantEligible = m.plantValue > 0; }
     if (m.constructionCost !== undefined) p.dep.constructionCost = m.constructionCost;
+    if (m.buildRate !== undefined) p.market.buildRate = m.buildRate;
+    // QS schedule line items (used when depMode is "schedule")
+    if (m.depMode === "schedule") {
+      p.dep.div43 = (m.div43 ?? []).map((l) => ({ name: l.name, amount: num(l.amount), yearsClaimed: num(l.yearsClaimed) }));
+      p.dep.div40 = (m.div40 ?? []).map((l) => ({ name: l.name, value: num(l.value), life: num(l.life), method: l.method || "Diminishing value" }));
+    } else if (m.depMode === "none") {
+      p.dep.div43 = []; p.dep.div40 = [];
+    }
+    if (m.scrapYear !== undefined) p.dep.scrapYear = m.scrapYear;
+    if (m.scrapValue !== undefined) p.dep.scrapValue = m.scrapValue;
   }
 
   // Strip the sample property's own history/title artifacts so the verdict's

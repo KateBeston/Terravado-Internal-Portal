@@ -211,6 +211,15 @@ export interface PropertyPhysical {
    field left unset falls back to the engine's standard assumptions. */
 export interface PropertyExpense { name?: string; amount?: number; freq?: string; ded?: boolean; }
 export interface CapexEvent { year?: number; name?: string; cost?: number; upliftPct?: number; rentUplift?: number; }
+
+/* Depreciation schedule line items (from a quantity surveyor's report).
+   Div 43 — capital works (the building), written off at 2.5% p.a. over 40 years.
+   Div 40 — plant & equipment (removable assets), written off over each asset's
+   effective life by prime cost or diminishing value. */
+export const DIV40_METHODS = ["Diminishing value", "Prime cost"] as const;
+export interface Div43Line { name?: string; amount?: number; yearsClaimed?: number; }
+export interface Div40Line { name?: string; value?: number; life?: number; method?: string; }
+
 export interface PropertyModelling {
   // Income & tenancy
   otherIncome?: number; pmFeePct?: number; lettingWeeks?: number; vacancyWeeks?: number;
@@ -218,8 +227,9 @@ export interface PropertyModelling {
   repaymentType?: string; ioYears?: number; termYears?: number; offsetBalance?: number; annualPackageFee?: number;
   // Acquisition
   otherPurchaseCosts?: number; capitaliseLmi?: boolean;
-  // Depreciation
-  depMode?: string; plantValue?: number; constructionCost?: number;
+  // Depreciation — "assumed" (estimate), "schedule" (QS report) or "none"
+  depMode?: string; plantValue?: number; constructionCost?: number; buildRate?: number;
+  div43?: Div43Line[]; div40?: Div40Line[]; scrapYear?: number; scrapValue?: number;
   // Lists
   expenses?: PropertyExpense[];
   capex?: CapexEvent[];

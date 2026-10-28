@@ -428,6 +428,14 @@ export async function addPropertyListItemAction(fd: FormData) {
     const mod = { ...(details.modelling ?? {}) };
     mod.capex = [...(mod.capex ?? []), { year: n(fd, "year"), name: s(fd, "name"), cost: n(fd, "cost"), upliftPct: n(fd, "upliftPct"), rentUplift: n(fd, "rentUplift") }];
     details.modelling = mod;
+  } else if (list === "div43") {
+    const mod = { ...(details.modelling ?? {}) };
+    mod.div43 = [...(mod.div43 ?? []), { name: s(fd, "name"), amount: n(fd, "amount"), yearsClaimed: n(fd, "yearsClaimed") }];
+    details.modelling = mod;
+  } else if (list === "div40") {
+    const mod = { ...(details.modelling ?? {}) };
+    mod.div40 = [...(mod.div40 ?? []), { name: s(fd, "name"), value: n(fd, "value"), life: n(fd, "life"), method: s(fd, "method") ?? "Diminishing value" }];
+    details.modelling = mod;
   }
   await svc.updateProperty(tenantId, id, { details });
   revalidatePath(`/properties/${id}`, "layout");
@@ -450,6 +458,10 @@ export async function removePropertyListItemAction(fd: FormData) {
     const mod = { ...(details.modelling ?? {}) }; const a = [...(mod.expenses ?? [])]; a.splice(idx, 1); mod.expenses = a; details.modelling = mod;
   } else if (list === "capex") {
     const mod = { ...(details.modelling ?? {}) }; const a = [...(mod.capex ?? [])]; a.splice(idx, 1); mod.capex = a; details.modelling = mod;
+  } else if (list === "div43") {
+    const mod = { ...(details.modelling ?? {}) }; const a = [...(mod.div43 ?? [])]; a.splice(idx, 1); mod.div43 = a; details.modelling = mod;
+  } else if (list === "div40") {
+    const mod = { ...(details.modelling ?? {}) }; const a = [...(mod.div40 ?? [])]; a.splice(idx, 1); mod.div40 = a; details.modelling = mod;
   }
   await svc.updateProperty(tenantId, id, { details });
   revalidatePath(`/properties/${id}`, "layout");
@@ -475,6 +487,7 @@ export async function savePropertyModellingAction(fd: FormData) {
     mod.capitaliseLmi = s(fd, "capitaliseLmi") === "on" || s(fd, "capitaliseLmi") === "true";
   } else if (section === "dep") {
     mod.depMode = s(fd, "depMode"); mod.plantValue = n(fd, "plantValue"); mod.constructionCost = n(fd, "constructionCost");
+    mod.buildRate = n(fd, "buildRate"); mod.scrapYear = n(fd, "scrapYear"); mod.scrapValue = n(fd, "scrapValue");
   }
   details.modelling = mod;
   await svc.updateProperty(tenantId, id, { details });

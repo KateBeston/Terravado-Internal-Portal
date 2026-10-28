@@ -1,23 +1,38 @@
-Equity chain: run off actual current loan balances (INTERNAL-PORTAL)
+Add a depreciation modeller to the property record (INTERNAL-PORTAL)
 
-The equity chain projected each owned property's loan from the modelling
-assumptions. This lets you enter the actual outstanding balance per property so
-usable equity reflects reality, falling back to the modelled balance where none
-is set.
+A proper Div 43 / Div 40 depreciation modeller as a new tab on each property,
+driving the engine's depreciationFor() and flowing into the Modeller's
+projection and after-tax position. The old Financials tab only had an assumed
+estimate with no schedule and no year-by-year output.
 
 What's new
-- currentLoanBalance on the property record (PropertyDetails) — stored in the
-  existing properties.details jsonb, no migration.
-- "Current loan balances" editor on /equity — set each owned property's actual
-  outstanding loan, saved in one go (saveLoanBalancesAction).
-- Equity chain uses it: the actual balance is backed out to a deposit % so the
-  modelled loan starts at the real figure (no LMI on a held asset). Usable
-  equity = projected value x release LVR - that balance, per owned property.
+- /properties/[id]/depreciation tab — three bases: Assumed (estimate from
+  construction cost or area x build rate + a plant allowance), Schedule (QS
+  report line items), or None.
+  - Div 43 capital works line editor (item, amount, years already claimed).
+  - Div 40 plant & equipment line editor (asset with an effective-life
+    datalist from the ATO table, value, life, prime cost / diminishing value).
+  - Scrapping (year + residual written off, e.g. on a renovation).
+  - Year-by-year schedule (Div 43, Div 40, scrapping, total) with year-1,
+    5-year and 15-year totals and the tax saving at a selectable marginal rate.
+- modelDepreciation() helper (src/lib/engine/depreciation.ts) — pure, reuses
+  the engine; the tab and the Modeller agree to the dollar.
+- PropertyModelling extended with div43[], div40[], scrapYear, scrapValue,
+  buildRate (in the existing properties.details jsonb — no migration).
+- core() (Modeller bridge) maps the schedule into the projection.
+- Nav: Depreciation tab between Financials and Modelling.
+
+Notes
+- buildYear and internalArea are read from the Physical tab; Div 43 needs
+  post-15-Sep-1987 construction.
+- Flags (does not enforce) the 1 July 2017 second-hand plant rule for
+  residential — a QS schedule is the accurate basis. Not tax advice.
 
 Verification
 - tsc --noEmit clean
-- npm run verify:engine — 21/21
-- npm run build — /equity builds
+- npm run verify:engine — 23/23 (new: Div 43 $320k→$8,000 y1; Div 40 DV
+  $5,000/10yr→$1,000 y1)
+- npm run build — depreciation tab builds
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV
