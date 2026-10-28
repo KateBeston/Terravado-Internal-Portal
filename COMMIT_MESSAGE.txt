@@ -1,30 +1,28 @@
-feat(sharing): collaborate (write) access for guests — notes, documents, financials on a shared deal
+Port Feasibility out of the retired Workspace into a persisted page
 
-INTERNAL PORTAL.
+The retired Workspace demo held a development-feasibility view that had no
+persisted equivalent anywhere in the real portal. This ports it in full and
+backs it with a real record so studies survive between sessions and are
+tenant-scoped like everything else.
 
-Finishes the first half of portal sharing: a guest whose share is
-permission='collaborate' can now contribute to the shared deal, not just view it.
+What's new
+- /feasibility page (gated on the "stock" capability) — list saved studies,
+  select one, create new, delete.
+- FeasibilityEditor: the full Workspace view (Scheme / Costs / Funding /
+  GST & target panels; KPIs; cost-stack, funding and sensitivity tables),
+  now backed by local edit state + a Save action instead of the in-memory
+  demo store. The engine's feasibility() does the maths, unchanged.
+- feasibilities table (migration 0021) — id, tenant_id, name, data jsonb,
+  created_at; RLS tenant-scoped (tenant_id in current_user_tenants()).
+- Service CRUD (list/get/add/update/remove) and server actions
+  (create/save/delete). The whole feasibility model lives in the data jsonb;
+  the shallow case mapper leaves its contents untouched.
+- Nav entry under the advisor tools, between Match and Pipeline.
 
-- Guest (on /shared/[clientId], when collaborate): edit the serviceability
-  financials, add documents, and post deal notes. View-only guests still get the
-  read-only view.
-- Deal notes: a shared thread on the deal, visible to the host and all shared
-  parties. The host posts and reads it on the person record's Sharing tab; the
-  guest on the shared deal view.
-- All writes go through guarded SECURITY DEFINER functions that check the caller
-  is a collaborator on that specific deal (or, for notes, the host) — add_deal_note,
-  add_deal_document, collab_update_finances — rather than broad cross-tenant write
-  policies. The guest never needs the host's tenant id. collab_update_finances
-  shallow-merges so structured income/liability lists survive.
-
-Migration 0020 (applied): collaborate_client_ids(); deal_notes table (+RLS read
-for host or shared party); the three write functions; execute locked to
-authenticated + service_role (per the 0019 hardening).
-
-Security audit re-run after the change: 0 violations; runtime isolation still
-holds. Next: brand-new-user invites (provision a login from an invite link).
-
-Verified: tsc --noEmit clean · verify:engine 20/20 · next build green · audit 0.
+Verification
+- tsc --noEmit clean
+- npm run verify:engine — 20/20
+- npm run build — /feasibility builds (115 kB first load)
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV

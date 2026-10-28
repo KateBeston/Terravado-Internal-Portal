@@ -9,6 +9,7 @@ import { redirect } from "next/navigation";
 import * as svc from "@/lib/domain/service";
 import type { BusinessDocStatus, PropertyStatus } from "@/lib/domain/types";
 import { runModel, runStressTest, type ModelInputs } from "@/lib/modelling/run";
+import { blankFeasibility } from "@/lib/engine/engine";
 import { getPropertyDataProvider } from "@/lib/integrations/property-data";
 import { assembleDealPack } from "@/lib/deal/pack";
 import { getLodgementProvider } from "@/lib/integrations/lodgement";
@@ -706,6 +707,35 @@ export async function deleteDevelopmentAction(fd: FormData) {
   const { tenantId } = await getCurrentTenant();
   const id = s(fd, "id");
   if (id) { await svc.removeDevelopment(tenantId, id); revalidatePath("/stock"); }
+}
+
+// --- Feasibilities (development feasibility studies) ---
+export async function createFeasibilityAction() {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const data = blankFeasibility() as unknown as Record<string, unknown>;
+  const rec = await svc.addFeasibility(tenantId, { name: String(data.name ?? "New feasibility"), data });
+  revalidatePath("/feasibility");
+  redirect(`/feasibility?id=${rec.id}`);
+}
+export async function saveFeasibilityAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id");
+  const raw = fd.get("data");
+  if (!id || typeof raw !== "string") return;
+  let data: Record<string, unknown>;
+  try { data = JSON.parse(raw); } catch { return; }
+  await svc.updateFeasibility(tenantId, id, { name: typeof data?.name === "string" ? data.name : undefined, data });
+  revalidatePath("/feasibility");
+}
+export async function deleteFeasibilityAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id");
+  if (id) await svc.removeFeasibility(tenantId, id);
+  revalidatePath("/feasibility");
+  redirect("/feasibility");
 }
 
 // --- Lots (stock) ---

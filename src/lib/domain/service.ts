@@ -2,7 +2,7 @@
    layer above the repository. UI and server actions call these, never the
    repository directly. */
 import { getRepository } from "@/lib/data";
-import type { AdvisorDeal, BusinessDocument, Client, Company, Contact, Development, EntityMember, Lender, Lodgement, Lot, OwnershipEntity, PersonDocument, Property, ReportSnapshot } from "./types";
+import type { AdvisorDeal, BusinessDocument, Client, Company, Contact, Development, EntityMember, FeasibilityRecord, Lender, Lodgement, Lot, OwnershipEntity, PersonDocument, Property, ReportSnapshot } from "./types";
 
 const uid = (): string =>
   globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : `id-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -127,6 +127,15 @@ export const addDevelopment = (tenantId: string, input: { name: string } & Parti
 export const updateDevelopment = (tenantId: string, id: string, patch: Partial<Development>): Promise<Development | null> =>
   getRepository().update<Development>("developments", tenantId, id, patch);
 export const removeDevelopment = (tenantId: string, id: string): Promise<boolean> => getRepository().remove("developments", tenantId, id);
+
+// --- Feasibilities (development feasibility studies) ---
+export const listFeasibilities = (tenantId: string): Promise<FeasibilityRecord[]> => getRepository().list<FeasibilityRecord>("feasibilities", tenantId);
+export const getFeasibility = (tenantId: string, id: string): Promise<FeasibilityRecord | null> => getRepository().get<FeasibilityRecord>("feasibilities", tenantId, id);
+export const addFeasibility = (tenantId: string, input: { name?: string; data: Record<string, unknown> }): Promise<FeasibilityRecord> =>
+  getRepository().create<FeasibilityRecord>("feasibilities", { ...input, id: uid(), tenantId, createdAt: nowISO() } as FeasibilityRecord);
+export const updateFeasibility = (tenantId: string, id: string, patch: Partial<FeasibilityRecord>): Promise<FeasibilityRecord | null> =>
+  getRepository().update<FeasibilityRecord>("feasibilities", tenantId, id, patch);
+export const removeFeasibility = (tenantId: string, id: string): Promise<boolean> => getRepository().remove("feasibilities", tenantId, id);
 
 // --- Lots (stock) ---
 export const listLots = (tenantId: string): Promise<Lot[]> => getRepository().list<Lot>("lots", tenantId);

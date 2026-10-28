@@ -331,6 +331,14 @@ export interface Development extends Entity {
   notes?: string;
 }
 
+/* A saved development feasibility study. The whole feasibility model (land,
+   product mix, cost stack, funding, GST) is held in `data` as the engine's
+   Feasibility object; engine.feasibility(data) computes the result. */
+export interface FeasibilityRecord extends Entity {
+  name?: string;
+  data: Record<string, unknown>;
+}
+
 export const LOT_STATUS = ["available", "under_offer", "sold", "settled", "withdrawn"] as const;
 
 /* One lot / property of stock under a development. Carries the marketed figures

@@ -34,7 +34,7 @@ export default async function PersonSharingTab({ params }: { params: { id: strin
             <label className="f"><span>Access</span>
               <select name="permission" defaultValue="view">
                 <option value="view">View only</option>
-                <option value="collaborate">Collaborate (coming soon)</option>
+                <option value="collaborate">Collaborate (edit financials, add documents & notes)</option>
               </select>
             </label>
           </div>

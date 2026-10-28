@@ -7,7 +7,6 @@ import { usePathname } from "next/navigation";
 const LINKS: [string, string, string?][] = [
   ["/", "Dashboard"],
   ["/modeller", "Modeller", "modeller"],
-  ["/workspace", "Workspace"],
   ["/lenders", "Lenders", "lenders"],
   ["/portfolio", "Portfolio", "portfolio"],
   ["/contacts", "Contacts", "clients"],
@@ -15,6 +14,7 @@ const LINKS: [string, string, string?][] = [
   ["/properties", "Properties", "properties"],
   ["/stock", "Stock", "stock"],
   ["/match", "Match", "stock"],
+  ["/feasibility", "Feasibility", "stock"],
   ["/pipeline", "Pipeline", "stock"],
   ["/finance", "Finance", "finance"],
   ["/lodgements", "Lodgements", "lodgement"],
