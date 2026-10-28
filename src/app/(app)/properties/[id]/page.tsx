@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
 import { getProperty, listClients, listEntities } from "@/lib/domain/service";
 import { updatePropertyClientAction, updatePropertyCoreAction } from "@/app/actions";
+import AddressAutocomplete from "@/components/AddressAutocomplete";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -38,7 +39,7 @@ export default async function PropertyOverview({ params }: { params: { id: strin
         <h2>Property details</h2>
         <form action={updatePropertyCoreAction}>
           <input type="hidden" name="id" value={p.id} />
-          <label className="f"><span>Address</span><input name="address" defaultValue={p.address ?? ""} required /></label>
+          <label className="f"><span>Address</span><AddressAutocomplete name="address" defaultValue={p.address ?? ""} required /></label>
           <div className="row">
             <label className="f"><span>State</span>
               <select name="state" defaultValue={p.state ?? "NSW"}>{STATES.map((s) => <option key={s}>{s}</option>)}</select>

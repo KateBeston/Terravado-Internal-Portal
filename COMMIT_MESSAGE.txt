@@ -1,37 +1,29 @@
-feat(sharing): external guest deal-sharing — invite onto one deal, view-only, cross-tenant scoped (final layer)
+feat(stock): developer stock foundation — developments + lots (advisor-side), gated by a stock capability
 
 INTERNAL PORTAL.
 
-The final account-model layer: an account can invite an external party onto a
-SINGLE deal (a person/client record + its properties, modelling and documents).
-The guest sees only that deal — never the host's book.
+First build of the developer-stock / advisor module (buy-side). This is the
+foundation the matching engine and advisor business tooling will hang off.
 
-- deal_shares: host_tenant_id, client_id, invited_email, permission (view |
-  collaborate), status (invited | accepted | revoked), token. RLS: the host
-  manages its own shares; the invited email can see shares addressed to them.
-- Guest read access via SEPARATE *_shared_select policies on contacts,
-  properties, report_snapshots, documents and lodgements — SELECT only, scoped
-  to shared_client_ids() (accepted shares for the current user by user-id or
-  email). Host write access is untouched; guests cannot write.
-- accept_deal_share(token) RPC: only the invited email may accept; sets the
-  share accepted and binds it to the user.
-- Host UI: a Sharing tab on the person record — invite by email, see shares,
-  copy the invite link, revoke (cuts access immediately).
-- Guest UI: /invite/[token] to accept, /shared to list deals shared with me, and
-  /shared/[clientId] a read-only deal view (serviceability snapshot, properties,
-  modelling runs). "Shared with me" added to the nav.
+- Developments: a developer project the advisor has stock in — developer,
+  location, status, commission arrangement (% or flat $/lot), and a link to the
+  stock-list PDF. Full CRUD at /stock and /stock/[id].
+- Lots (stock) under a development: lot number, address, stage, price,
+  availability, beds/baths/cars/land, plus the MARKETED figures (advertised
+  weekly rent, yield %, and a free-text advertised ROI). Add/list/delete on the
+  development record.
+- New "stock" capability, granted to broker / consultant / buyers-agent account
+  types (not public); the nav "Stock" item and both pages are capability-gated.
 
-Migration 0016 (applied): deal_shares (+RLS, indexes), shared_client_ids() and
-accept_deal_share() functions, and the five guest *_shared_select policies.
+Migration 0017 (applied): developments and lots tables (+RLS tenant-scoped,
+indexes).
 
-RLS audit done alongside: every table has RLS enabled; all core data tables are
-tenant-scoped via current_user_tenants() (no permissive 'true'); platform_admins
-is deny-by-default (reached only via guarded functions). Sharing is view-only in
-this version; collaborate (scoped write) and brand-new-user invites are the next
-step.
+Spec recorded in The Business section (and project docs). Next: the matching
+engine (score stock against a client's capacity + criteria), then the commission
+calculator, commission/revenue tracker and advisor deal pipeline. Stock-list PDF
+is stored by link for now; structured entry is in, AI-assisted extraction later.
 
-Verified: tsc --noEmit clean · verify:engine 20/20 · next build green ·
-sharing policies confirmed SELECT-only and scoped.
+Verified: tsc --noEmit clean · verify:engine 20/20 · next build green.
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV

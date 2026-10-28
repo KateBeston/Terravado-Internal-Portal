@@ -2,7 +2,7 @@ import { requireUser } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
 import { getProperty } from "@/lib/domain/service";
 import { savePropertyDetailsAction, pullLocalityAction } from "@/app/actions";
-import { GOOGLE_MAPS_CONFIGURED, staticMapUrl, streetViewUrl, mapsLinkUrl } from "@/lib/integrations/maps";
+import { GOOGLE_MAPS_CONFIGURED, staticMapUrl, streetViewUrl, mapsLinkUrl, embedMapUrl } from "@/lib/integrations/maps";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -14,8 +14,10 @@ export default async function PropertyLocalityTab({ params }: { params: { id: st
   const p = await getProperty(tenantId, params.id);
   if (!p) notFound();
   const l = p.details?.locality ?? {};
-  const sat = staticMapUrl(p.address, { maptype: "hybrid" });
-  const street = streetViewUrl(p.address);
+  const mapQuery = l.lat != null && l.lng != null ? `${l.lat},${l.lng}` : p.address;
+  const sat = staticMapUrl(mapQuery, { maptype: "hybrid" });
+  const street = streetViewUrl(mapQuery);
+  const embed = embedMapUrl(mapQuery);
 
   return (
     <>
@@ -23,6 +25,11 @@ export default async function PropertyLocalityTab({ params }: { params: { id: st
         <h2>Map, satellite &amp; street view</h2>
         {GOOGLE_MAPS_CONFIGURED && sat ? (
           <>
+            {embed && (
+              <iframe title={`Map of ${p.address}`} src={embed} loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade" allowFullScreen
+                style={{ width: "100%", height: 340, border: "1px solid var(--line)", marginBottom: 12 }} />
+            )}
             <div className="split" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={sat} alt={`Satellite view of ${p.address}`} style={{ width: "100%", borderRadius: 0, border: "1px solid var(--line)" }} />
@@ -30,7 +37,8 @@ export default async function PropertyLocalityTab({ params }: { params: { id: st
               {street && <img src={street} alt={`Street view of ${p.address}`} style={{ width: "100%", borderRadius: 0, border: "1px solid var(--line)" }} />}
             </div>
             <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>
-              Satellite &amp; street view via Google Maps. <a href={mapsLinkUrl(p.address)} target="_blank" rel="noreferrer">Open in Google Maps ↗</a>
+              Interactive map, satellite &amp; street view via Google Maps{l.placeId ? " · address verified by Google Places" : ""}.
+              <a href={mapsLinkUrl(p.address)} target="_blank" rel="noreferrer"> Open in Google Maps ↗</a>
             </p>
           </>
         ) : (

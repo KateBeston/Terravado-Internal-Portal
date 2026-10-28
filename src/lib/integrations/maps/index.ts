@@ -30,6 +30,14 @@ export function streetViewUrl(address: string, opts?: { size?: string }): string
   return `https://maps.googleapis.com/maps/api/streetview?${p.toString()}`;
 }
 
+/** An interactive Google Maps embed (Maps Embed API). Enable "Maps Embed API"
+    on the same key. Pan/zoom, unlike the static image. */
+export function embedMapUrl(query: string): string | null {
+  if (!GOOGLE_MAPS_CONFIGURED || !query) return null;
+  const p = new URLSearchParams({ key: KEY, q: query, zoom: "17" });
+  return `https://www.google.com/maps/embed/v1/place?${p.toString()}`;
+}
+
 /** A plain Google Maps search link — works with no API key, so it's the fallback. */
 export function mapsLinkUrl(address: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;

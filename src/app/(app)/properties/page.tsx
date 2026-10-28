@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
 import { listProperties, listClients } from "@/lib/domain/service";
 import { createPropertyAction, deletePropertyAction } from "@/app/actions";
+import AddressAutocomplete from "@/components/AddressAutocomplete";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +25,7 @@ export default async function PropertiesPage() {
       <div className="panel">
         <h2>Add a property</h2>
         <form action={createPropertyAction}>
-          <label className="f"><span>Address</span><input name="address" required placeholder="Street, suburb, state, postcode" /></label>
+          <label className="f"><span>Address</span><AddressAutocomplete name="address" required placeholder="Street, suburb, state, postcode" /></label>
           <div className="row">
             <label className="f"><span>State</span>
               <select name="state" defaultValue="NSW">{STATES.map((s) => <option key={s}>{s}</option>)}</select>

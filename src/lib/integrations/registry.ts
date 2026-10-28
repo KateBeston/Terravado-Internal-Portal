@@ -46,9 +46,9 @@ export function integrationStatuses(): IntegrationStatus[] {
     {
       key: "googlemaps", label: "Google Maps", category: "Geography / imagery",
       configured: GOOGLE_MAPS_CONFIGURED, envVar: "NEXT_PUBLIC_GOOGLE_MAPS_KEY",
-      fallback: "Link out to Google Maps (no embed)",
-      enables: "Embedded map, satellite & street view on the property record",
-      access: "Google Cloud project + billing (free monthly tier); restrict the key by referrer",
+      fallback: "Link out to Google Maps (no embed); plain address input",
+      enables: "Interactive map, satellite & street view, and Places address autocomplete on property entry",
+      access: "Google Cloud project + billing (free tier); enable Maps JavaScript, Places, Maps Embed, Static Maps & Street View APIs; restrict the key by referrer",
     },
     {
       key: "cdr", label: "CDR Open Banking", category: "Lender product data",

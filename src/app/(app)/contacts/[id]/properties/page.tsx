@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
 import { getContact, listProperties } from "@/lib/domain/service";
 import { createPropertyAction } from "@/app/actions";
+import AddressAutocomplete from "@/components/AddressAutocomplete";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -43,7 +44,7 @@ export default async function PersonPropertiesTab({ params }: { params: { id: st
         <h2>Add a property for this person</h2>
         <form action={createPropertyAction}>
           <input type="hidden" name="clientId" value={c.id} />
-          <label className="f"><span>Address</span><input name="address" required /></label>
+          <label className="f"><span>Address</span><AddressAutocomplete name="address" required /></label>
           <div className="row">
             <label className="f"><span>State</span><select name="state" defaultValue="NSW">{STATES.map((s) => <option key={s}>{s}</option>)}</select></label>
             <label className="f"><span>Price</span><input name="price" type="number" step="1000" /></label>

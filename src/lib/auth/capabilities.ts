@@ -16,17 +16,17 @@ export const ACCOUNT_TYPES: { value: AccountType; label: string; blurb: string }
 export type Capability =
   | "modeller" | "portfolio" | "clients" | "properties" | "entities"
   | "lenders" | "finance" | "lodgement" | "bankData" | "dealExport"
-  | "integrations" | "business";
+  | "stock" | "integrations" | "business";
 
 /* Which capabilities each account type is granted. Everyone gets the shared
-   core; the differences are lenders/finance/lodgement/bankData/dealExport and
-   the admin-ish integrations/business sections. */
+   core; the differences are lenders/finance/lodgement/bankData/dealExport,
+   stock, and the admin-ish integrations/business sections. */
 const CORE: Capability[] = ["modeller", "portfolio", "clients", "properties", "entities"];
 
 const MATRIX: Record<AccountType, Capability[]> = {
-  broker: [...CORE, "lenders", "finance", "lodgement", "bankData", "dealExport", "integrations", "business"],
-  consultant: [...CORE, "lenders", "finance", "dealExport", "integrations", "business"],
-  buyers_agent: [...CORE, "integrations", "business"],
+  broker: [...CORE, "lenders", "finance", "lodgement", "bankData", "dealExport", "stock", "integrations", "business"],
+  consultant: [...CORE, "lenders", "finance", "dealExport", "stock", "integrations", "business"],
+  buyers_agent: [...CORE, "stock", "integrations", "business"],
   public: ["modeller", "portfolio", "properties"],
 };
 

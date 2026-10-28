@@ -2,7 +2,7 @@
    layer above the repository. UI and server actions call these, never the
    repository directly. */
 import { getRepository } from "@/lib/data";
-import type { BusinessDocument, Client, Company, Contact, EntityMember, Lender, Lodgement, OwnershipEntity, PersonDocument, Property, ReportSnapshot } from "./types";
+import type { BusinessDocument, Client, Company, Contact, Development, EntityMember, Lender, Lodgement, Lot, OwnershipEntity, PersonDocument, Property, ReportSnapshot } from "./types";
 
 const uid = (): string =>
   globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : `id-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -118,6 +118,24 @@ export const listDocuments = (tenantId: string): Promise<PersonDocument[]> =>
 export const addDocument = (tenantId: string, input: { name: string } & Partial<PersonDocument>): Promise<PersonDocument> =>
   getRepository().create<PersonDocument>("documents", { ...input, id: uid(), tenantId, createdAt: nowISO() } as PersonDocument);
 export const removeDocument = (tenantId: string, id: string): Promise<boolean> => getRepository().remove("documents", tenantId, id);
+
+// --- Developments (developer projects the advisor has stock in) ---
+export const listDevelopments = (tenantId: string): Promise<Development[]> => getRepository().list<Development>("developments", tenantId);
+export const getDevelopment = (tenantId: string, id: string): Promise<Development | null> => getRepository().get<Development>("developments", tenantId, id);
+export const addDevelopment = (tenantId: string, input: { name: string } & Partial<Development>): Promise<Development> =>
+  getRepository().create<Development>("developments", { ...input, id: uid(), tenantId, createdAt: nowISO() } as Development);
+export const updateDevelopment = (tenantId: string, id: string, patch: Partial<Development>): Promise<Development | null> =>
+  getRepository().update<Development>("developments", tenantId, id, patch);
+export const removeDevelopment = (tenantId: string, id: string): Promise<boolean> => getRepository().remove("developments", tenantId, id);
+
+// --- Lots (stock) ---
+export const listLots = (tenantId: string): Promise<Lot[]> => getRepository().list<Lot>("lots", tenantId);
+export const getLot = (tenantId: string, id: string): Promise<Lot | null> => getRepository().get<Lot>("lots", tenantId, id);
+export const addLot = (tenantId: string, input: Partial<Lot>): Promise<Lot> =>
+  getRepository().create<Lot>("lots", { ...input, id: uid(), tenantId, createdAt: nowISO() } as Lot);
+export const updateLot = (tenantId: string, id: string, patch: Partial<Lot>): Promise<Lot | null> =>
+  getRepository().update<Lot>("lots", tenantId, id, patch);
+export const removeLot = (tenantId: string, id: string): Promise<boolean> => getRepository().remove("lots", tenantId, id);
 
 // --- Business documents (business development log) ---
 export const listBusinessDocs = (tenantId: string): Promise<BusinessDocument[]> =>

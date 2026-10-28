@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 const CAP_LABELS: Record<Capability, string> = {
   modeller: "Modeller", portfolio: "Portfolio", clients: "Clients / contacts", properties: "Properties",
   entities: "Entities", lenders: "Lender compare", finance: "Finance", lodgement: "Lodgement",
-  bankData: "Bank data (Open Banking)", dealExport: "Deal export", integrations: "Integrations", business: "The Business",
+  bankData: "Bank data (Open Banking)", dealExport: "Deal export", stock: "Developer stock", integrations: "Integrations", business: "The Business",
 };
 const ALL_CAPS = Object.keys(CAP_LABELS) as Capability[];
 

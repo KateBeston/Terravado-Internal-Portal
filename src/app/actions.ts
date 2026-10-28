@@ -26,6 +26,22 @@ const n = (fd: FormData, k: string): number | undefined => {
   return isFinite(num) ? num : undefined;
 };
 
+/* Build a locality patch from the Google Places autocomplete hidden fields, or
+   undefined when the address was typed by hand (no place selected). */
+function localityFromGeo(fd: FormData): Record<string, any> | undefined {
+  const lat = n(fd, "lat"), lng = n(fd, "lng"), placeId = s(fd, "placeId");
+  const suburb = s(fd, "geoSuburb"), region = s(fd, "geoState"), postcode = s(fd, "geoPostcode");
+  if (lat === undefined && lng === undefined && !placeId && !suburb && !postcode) return undefined;
+  const loc: Record<string, any> = {};
+  if (lat !== undefined) loc.lat = lat;
+  if (lng !== undefined) loc.lng = lng;
+  if (placeId) loc.placeId = placeId;
+  if (suburb) loc.suburb = suburb;
+  if (region) loc.region = region;
+  if (postcode) loc.postcode = postcode;
+  return loc;
+}
+
 // --- Clients ---
 export async function createClientAction(fd: FormData) {
   await requireUser();
@@ -267,7 +283,13 @@ export async function createPropertyAction(fd: FormData) {
   const { tenantId } = await getCurrentTenant();
   const address = s(fd, "address");
   if (!address) return;
-  await svc.addProperty(tenantId, { address, state: s(fd, "state"), price: n(fd, "price"), status: (s(fd, "status") as PropertyStatus) ?? "considering", clientId: s(fd, "clientId") });
+  const geoState = s(fd, "geoState");
+  const loc = localityFromGeo(fd);
+  await svc.addProperty(tenantId, {
+    address, state: geoState ?? s(fd, "state"), price: n(fd, "price"),
+    status: (s(fd, "status") as PropertyStatus) ?? "considering", clientId: s(fd, "clientId"),
+    ...(loc ? { details: { locality: loc } } : {}),
+  });
   revalidatePath("/properties");
   revalidatePath("/portfolio");
 }
@@ -285,10 +307,19 @@ export async function updatePropertyCoreAction(fd: FormData) {
   const { tenantId } = await getCurrentTenant();
   const id = s(fd, "id");
   if (!id) return;
-  await svc.updateProperty(tenantId, id, {
-    address: s(fd, "address"), state: s(fd, "state"), price: n(fd, "price"),
+  const geoState = s(fd, "geoState");
+  const loc = localityFromGeo(fd);
+  const patch: Record<string, any> = {
+    address: s(fd, "address"), state: geoState ?? s(fd, "state"), price: n(fd, "price"),
     status: (s(fd, "status") as PropertyStatus) ?? undefined, entityId: s(fd, "entityId") ?? undefined,
-  });
+  };
+  if (loc) {
+    const current = await svc.getProperty(tenantId, id);
+    const details = { ...(current?.details ?? {}) };
+    details.locality = { ...(details.locality ?? {}), ...loc };
+    patch.details = details;
+  }
+  await svc.updateProperty(tenantId, id, patch);
   revalidatePath(`/properties/${id}`, "layout");
   revalidatePath("/properties");
 }
@@ -643,6 +674,61 @@ export async function adminAddMemberAction(fd: FormData) {
   const sb = createClient();
   await sb.rpc("admin_add_member", { p_tenant: tenant, p_user: userId, p_role: role });
   revalidatePath(`/admin/${tenant}`);
+}
+
+// --- Developments (developer stock) ---
+export async function createDevelopmentAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const name = s(fd, "name");
+  if (!name) return;
+  await svc.addDevelopment(tenantId, {
+    name, developer: s(fd, "developer"), suburb: s(fd, "suburb"), state: s(fd, "state"),
+    commissionPct: n(fd, "commissionPct"), commissionFlat: n(fd, "commissionFlat"),
+    stockListUrl: s(fd, "stockListUrl"), notes: s(fd, "notes"),
+  });
+  revalidatePath("/stock");
+}
+export async function updateDevelopmentAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id");
+  if (!id) return;
+  await svc.updateDevelopment(tenantId, id, {
+    name: s(fd, "name"), developer: s(fd, "developer"), suburb: s(fd, "suburb"), state: s(fd, "state"),
+    commissionPct: n(fd, "commissionPct"), commissionFlat: n(fd, "commissionFlat"),
+    stockListUrl: s(fd, "stockListUrl"), status: s(fd, "status"), notes: s(fd, "notes"),
+  });
+  revalidatePath(`/stock/${id}`); revalidatePath("/stock");
+}
+export async function deleteDevelopmentAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id");
+  if (id) { await svc.removeDevelopment(tenantId, id); revalidatePath("/stock"); }
+}
+
+// --- Lots (stock) ---
+export async function createLotAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const developmentId = s(fd, "developmentId");
+  if (!developmentId) return;
+  await svc.addLot(tenantId, {
+    developmentId, lotNumber: s(fd, "lotNumber"), address: s(fd, "address"), stage: s(fd, "stage"),
+    price: n(fd, "price"), status: s(fd, "status") ?? "available",
+    beds: n(fd, "beds"), baths: n(fd, "baths"), cars: n(fd, "cars"), landSize: n(fd, "landSize"),
+    advertisedRent: n(fd, "advertisedRent"), advertisedYieldPct: n(fd, "advertisedYieldPct"),
+    advertisedRoi: s(fd, "advertisedRoi"), notes: s(fd, "notes"),
+  });
+  revalidatePath(`/stock/${developmentId}`);
+}
+export async function deleteLotAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id");
+  const developmentId = s(fd, "developmentId");
+  if (id) { await svc.removeLot(tenantId, id); if (developmentId) revalidatePath(`/stock/${developmentId}`); }
 }
 
 // --- Deal sharing (external guests) ---

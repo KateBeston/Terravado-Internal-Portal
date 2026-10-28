@@ -195,6 +195,7 @@ export interface PropertyTitle {
 }
 export interface PropertyLocality {
   suburb?: string; locality?: string; region?: string; postcode?: string;
+  lat?: number; lng?: number; placeId?: string;   // from Google Places (address identifier)
   suburbMedian?: number; suburbMedianRent?: number;
   vacancyPct?: number; daysToLease?: number; popGrowthPct?: number; annualGrowthPct?: number;
   transport?: string; notes?: string;
@@ -311,6 +312,45 @@ export interface PersonDocument extends Entity {
   name: string;
   kind?: string;
   storagePath?: string;
+}
+
+/* A developer project the advisor has stock in. Commission arrangement lives
+   here for the commission calculator; the stock list PDF is referenced by URL
+   for now (file upload to storage later). */
+export interface Development extends Entity {
+  name: string;
+  developer?: string;
+  suburb?: string;
+  state?: string;
+  region?: string;
+  description?: string;
+  commissionPct?: number;
+  commissionFlat?: number;
+  stockListUrl?: string;
+  status?: string;   // active / sold_out / archived
+  notes?: string;
+}
+
+export const LOT_STATUS = ["available", "under_offer", "sold", "settled", "withdrawn"] as const;
+
+/* One lot / property of stock under a development. Carries the marketed figures
+   (advertised rent/yield/ROI) alongside price and stage; the Modeller and the
+   matching engine read these. */
+export interface Lot extends Entity {
+  developmentId?: string;
+  lotNumber?: string;
+  address?: string;
+  stage?: string;
+  price?: number;
+  status?: string;   // see LOT_STATUS
+  beds?: number;
+  baths?: number;
+  cars?: number;
+  landSize?: number;
+  advertisedRent?: number;       // weekly
+  advertisedYieldPct?: number;
+  advertisedRoi?: string;
+  notes?: string;
 }
 
 export type BusinessDocStatus = "active" | "draft" | "archived";
