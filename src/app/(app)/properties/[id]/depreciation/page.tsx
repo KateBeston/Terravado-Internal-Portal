@@ -1,7 +1,7 @@
 import { requireUser } from "@/lib/auth/guard";
 import { getCurrentTenant } from "@/lib/auth/tenant";
 import { getProperty } from "@/lib/domain/service";
-import { savePropertyModellingAction, addPropertyListItemAction, removePropertyListItemAction } from "@/app/actions";
+import { savePropertyModellingAction, addPropertyListItemAction, removePropertyListItemAction, updatePropertyListItemAction } from "@/app/actions";
 import { modelDepreciation, type DepInput } from "@/lib/engine/depreciation";
 import { TAX_DATA } from "@/lib/engine/tax-data";
 import { DIV40_METHODS } from "@/lib/domain/types";
@@ -79,8 +79,16 @@ export default async function PropertyDepreciationTab({ params, searchParams }: 
           <tbody>
             {div43.map((l, i) => (
               <tr key={i}>
-                <td className="lbl">{l.name ?? "—"}</td><td>{money(l.amount)}</td><td>{l.yearsClaimed ?? 0}</td>
                 <td>
+                  <form id={`f43-${i}`} action={updatePropertyListItemAction}>
+                    <input type="hidden" name="id" value={p.id} /><input type="hidden" name="list" value="div43" /><input type="hidden" name="index" value={i} />
+                  </form>
+                  <input form={`f43-${i}`} name="name" defaultValue={l.name ?? ""} />
+                </td>
+                <td><input form={`f43-${i}`} name="amount" inputMode="numeric" defaultValue={v(l.amount)} style={{ width: 120 }} /></td>
+                <td><input form={`f43-${i}`} name="yearsClaimed" inputMode="numeric" defaultValue={v(l.yearsClaimed)} style={{ width: 90 }} /></td>
+                <td style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <button form={`f43-${i}`} className="btn" type="submit">Save</button>
                   <form action={removePropertyListItemAction}>
                     <input type="hidden" name="id" value={p.id} /><input type="hidden" name="list" value="div43" /><input type="hidden" name="index" value={i} />
                     <button className="x" type="submit" aria-label="Remove">×</button>
@@ -109,8 +117,19 @@ export default async function PropertyDepreciationTab({ params, searchParams }: 
           <tbody>
             {div40.map((l, i) => (
               <tr key={i}>
-                <td className="lbl">{l.name ?? "—"}</td><td>{money(l.value)}</td><td>{l.life ? l.life + " yrs" : "—"}</td><td>{l.method ?? "—"}</td>
                 <td>
+                  <form id={`f40-${i}`} action={updatePropertyListItemAction}>
+                    <input type="hidden" name="id" value={p.id} /><input type="hidden" name="list" value="div40" /><input type="hidden" name="index" value={i} />
+                  </form>
+                  <input form={`f40-${i}`} name="name" list="dep-lives" defaultValue={l.name ?? ""} />
+                </td>
+                <td><input form={`f40-${i}`} name="value" inputMode="numeric" defaultValue={v(l.value)} style={{ width: 110 }} /></td>
+                <td><input form={`f40-${i}`} name="life" inputMode="numeric" defaultValue={v(l.life)} style={{ width: 70 }} /></td>
+                <td>
+                  <select form={`f40-${i}`} name="method" defaultValue={l.method ?? "Diminishing value"}>{DIV40_METHODS.map((x) => <option key={x}>{x}</option>)}</select>
+                </td>
+                <td style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <button form={`f40-${i}`} className="btn" type="submit">Save</button>
                   <form action={removePropertyListItemAction}>
                     <input type="hidden" name="id" value={p.id} /><input type="hidden" name="list" value="div40" /><input type="hidden" name="index" value={i} />
                     <button className="x" type="submit" aria-label="Remove">×</button>

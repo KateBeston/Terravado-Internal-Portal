@@ -467,6 +467,28 @@ export async function removePropertyListItemAction(fd: FormData) {
   revalidatePath(`/properties/${id}`, "layout");
 }
 
+/* Edit an existing list item in place (currently the depreciation schedule
+   lines). Takes id, list, index and the line's fields. */
+export async function updatePropertyListItemAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const id = s(fd, "id"); const list = s(fd, "list"); const idx = Number(s(fd, "index"));
+  if (!id || !list || !isFinite(idx)) return;
+  const p = await svc.getProperty(tenantId, id); if (!p) return;
+  const details = { ...(p.details ?? {}) };
+  if (list === "div43") {
+    const mod = { ...(details.modelling ?? {}) }; const a = [...(mod.div43 ?? [])];
+    if (a[idx]) a[idx] = { name: s(fd, "name"), amount: n(fd, "amount"), yearsClaimed: n(fd, "yearsClaimed") };
+    mod.div43 = a; details.modelling = mod;
+  } else if (list === "div40") {
+    const mod = { ...(details.modelling ?? {}) }; const a = [...(mod.div40 ?? [])];
+    if (a[idx]) a[idx] = { name: s(fd, "name"), value: n(fd, "value"), life: n(fd, "life"), method: s(fd, "method") ?? "Diminishing value" };
+    mod.div40 = a; details.modelling = mod;
+  }
+  await svc.updateProperty(tenantId, id, { details });
+  revalidatePath(`/properties/${id}`, "layout");
+}
+
 /* Deep financial inputs for a property — saved per section into details.modelling. */
 export async function savePropertyModellingAction(fd: FormData) {
   await requireUser();

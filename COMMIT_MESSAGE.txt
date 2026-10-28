@@ -1,37 +1,17 @@
-Add a depreciation modeller to the property record (INTERNAL-PORTAL)
+Depreciation schedule: edit line items in place (INTERNAL-PORTAL)
 
-A proper Div 43 / Div 40 depreciation modeller as a new tab on each property,
-driving the engine's depreciationFor() and flowing into the Modeller's
-projection and after-tax position. The old Financials tab only had an assumed
-estimate with no schedule and no year-by-year output.
+The Div 43 and Div 40 schedule lines could be added and removed but not edited.
+This makes them full CRUD — each row is now editable in place.
 
 What's new
-- /properties/[id]/depreciation tab — three bases: Assumed (estimate from
-  construction cost or area x build rate + a plant allowance), Schedule (QS
-  report line items), or None.
-  - Div 43 capital works line editor (item, amount, years already claimed).
-  - Div 40 plant & equipment line editor (asset with an effective-life
-    datalist from the ATO table, value, life, prime cost / diminishing value).
-  - Scrapping (year + residual written off, e.g. on a renovation).
-  - Year-by-year schedule (Div 43, Div 40, scrapping, total) with year-1,
-    5-year and 15-year totals and the tax saving at a selectable marginal rate.
-- modelDepreciation() helper (src/lib/engine/depreciation.ts) — pure, reuses
-  the engine; the tab and the Modeller agree to the dollar.
-- PropertyModelling extended with div43[], div40[], scrapYear, scrapValue,
-  buildRate (in the existing properties.details jsonb — no migration).
-- core() (Modeller bridge) maps the schedule into the projection.
-- Nav: Depreciation tab between Financials and Modelling.
-
-Notes
-- buildYear and internalArea are read from the Physical tab; Div 43 needs
-  post-15-Sep-1987 construction.
-- Flags (does not enforce) the 1 July 2017 second-hand plant rule for
-  residential — a QS schedule is the accurate basis. Not tax advice.
+- updatePropertyListItemAction — edits a div43 / div40 line at its index
+  (merged back into properties.details jsonb; no migration).
+- Depreciation tab: each Div 43 and Div 40 row is now a live form — inputs
+  pre-filled, a Save per row, delete (x) kept. (Uses the HTML `form` attribute
+  so one row's inputs post together while the table layout stays intact.)
 
 Verification
 - tsc --noEmit clean
-- npm run verify:engine — 23/23 (new: Div 43 $320k→$8,000 y1; Div 40 DV
-  $5,000/10yr→$1,000 y1)
 - npm run build — depreciation tab builds
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
