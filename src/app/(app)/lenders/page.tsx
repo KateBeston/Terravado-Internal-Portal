@@ -3,17 +3,20 @@ import { getCurrentTenant } from "@/lib/auth/tenant";
 import { listLenders } from "@/lib/domain/service";
 import { createLenderAction, deleteLenderAction } from "@/app/actions";
 import { QUICKLI_CONFIGURED } from "@/lib/integrations/finance/quickli";
+import { getBankProducts } from "@/lib/integrations/bank-products";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 const KINDS = ["Major bank", "Non-bank", "Specialist", "Credit union", "Other"];
 const pct = (v?: number) => (v === undefined || v === null ? "—" : v + "%");
+const money = (v?: number) => (v === undefined || v === null ? "—" : "$" + Math.round(v).toLocaleString("en-AU"));
 
 export default async function LendersPage() {
   await requireUser();
   await requireCapability("lenders");
   const { tenantId } = await getCurrentTenant();
   const lenders = await listLenders(tenantId);
+  const cdr = await getBankProducts();
 
   return (
     <section>
@@ -29,6 +32,31 @@ export default async function LendersPage() {
               products below. Connecting Quickli replaces these with each lender&apos;s live serviceability calculator — set the
               <code> QUICKLI_API_KEY</code> environment variable (server-side) under a Quickli API agreement, and it takes over automatically.
             </p>}
+      </div>
+
+      <div className="panel">
+        <h2>Live product rates — CDR Open Banking</h2>
+        <p className="muted" style={{ marginTop: -4, fontSize: 13 }}>{cdr.note}</p>
+        {cdr.products.length > 0 && (
+          <table>
+            <thead><tr><th>Lender</th><th>Product</th><th>Variable rate</th><th>Comparison</th><th>Annual fee</th></tr></thead>
+            <tbody>
+              {cdr.products.map((p, i) => (
+                <tr key={i}>
+                  <td><strong>{p.lender}</strong></td>
+                  <td>{p.name}</td>
+                  <td>{p.ratePct !== undefined ? p.ratePct + "%" : "—"}</td>
+                  <td>{p.comparisonRatePct !== undefined ? p.comparisonRatePct + "%" : "—"}</td>
+                  <td>{money(p.annualFee)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        <p className="muted" style={{ fontSize: 11 }}>
+          Public CDR Product Reference Data — no key, no consent. Representative residential-mortgage products, polled
+          server-side and cached. Bank base URIs are configurable via <code>CDR_BANKS</code>; <code>CDR_PRODUCTS_ENABLED=off</code> disables it.
+        </p>
       </div>
 
       <div className="panel">

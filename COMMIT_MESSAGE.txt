@@ -1,25 +1,27 @@
-Wire live ABS population into the Atlas map (INTERNAL-PORTAL)
+Wire live CDR product data into the Lenders page (INTERNAL-PORTAL)
 
-The ABS layer now fetches real Estimated Resident Population by state from the
-open ABS Data API at request time (no key), deriving population and annual
-growth, and falls back to the labelled snapshot on any failure so the Map never
-breaks. The `live` flag and the on-screen disclaimer reflect which is in play.
+Pulls residential-mortgage product rates & fees from the public CDR Product
+Reference Data APIs (no key, no consent, no accreditation) and shows them on the
+Lenders page. Live by default; degrades to a clear note (never errors) if a bank
+is unreachable.
 
 How it works
-- Live by default (no key). Server-side fetch of the ERP flow as CSV, cached 6h.
-- Robust parse: per state per period it takes the largest observation — the
-  all-persons / all-ages total — so it doesn't depend on the exact ABS dimension
-  keys and survives schema tweaks. Growth = latest vs ~1 year earlier.
-- Job growth stays on the snapshot until a labour-force query is wired.
-- Env: ABS_LIVE=off forces the snapshot; ABS_ERP_URL overrides the query with no
-  code change.
+- CDR is federated — each ADI exposes its own base URI — so a configurable list
+  of banks is polled server-side: products (x-v:3) then a representative
+  product's detail (x-v:4) for the variable rate, comparison rate and annual fee.
+  Per-bank failures are skipped; result cached 6h.
+- "Live product rates — CDR Open Banking" panel on /lenders lists what came back
+  with a status note (how many banks returned).
+- Env: CDR_PRODUCTS_ENABLED=off disables it; CDR_BANKS (JSON array of
+  {brand, base}) overrides the bank list.
 
 Honesty / verification
-- tsc clean; build green. Booted next start: /atlas → HTTP 200.
-- The build sandbox can't reach api.data.abs.gov.au, so I verified the fallback
-  path here (it correctly shows the snapshot). On Vercel the live fetch runs;
-  if the default ERP query doesn't match the current ABS dataflow it stays on
-  the snapshot (never errors), and ABS_ERP_URL points it at the confirmed query.
+- tsc clean; build green. Booted next start: /lenders → HTTP 200, panel renders.
+- The build sandbox can't reach the bank endpoints, so I verified the fallback
+  (panel shows "No banks returned products"). On Vercel the live poll runs. The
+  default bank base URIs are best-effort — if any are wrong those banks just
+  don't appear; set CDR_BANKS to the confirmed ACCC-register base URIs to fix,
+  no code change.
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV
