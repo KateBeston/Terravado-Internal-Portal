@@ -1,30 +1,19 @@
-Shortlist: fold land tax & depreciation into the per-client ranking (INTERNAL-PORTAL)
+Update income tax to the 2026-27 scale (INTERNAL-PORTAL)
 
-The ranking now reflects the two factors that most change "best on paper" after
-tax — depreciation and land tax — by threading them through the model so the
-engine's own after-tax cashflow (and therefore the score) accounts for them.
+The engine was on the 2025-26 resident scale (16% bottom bracket); the current
+financial year (from 1 Jul 2026) dropped it to 15%.
 
-What's new
-- ModelInputs gains landValue and buildYear; core() maps them to the engine's
-  land-tax basis and Div 43 eligibility — so a candidate's land tax and
-  depreciation are modelled per-property, not inherited from the seed.
-- Shortlist estimates, per candidate, a conservative construction cost, plant
-  value and unimproved land value (clearly labelled estimates, used only when the
-  record doesn't carry real figures), feeds them to runModel, and the after-tax
-  weekly + verdict now include depreciation benefit and land-tax cost.
-- Each row's "Why" shows the estimated year-1 depreciation and standalone land
-  tax, so the numbers are explainable, not hidden in the score.
+- tax-data.ts: version AU-2026-27, 2026-27 scale (15% on 18,201–45,000; bases
+  4,020 / 31,020 / 51,370), marginal rates 0/17/32/39/47 incl. Medicare. The
+  2025-26 figures are noted for prior-version retention; legislated 14% follows
+  1 Jul 2027.
+- Assurance known-answer checks updated to the 2026-27 answers ($100k → $22,520;
+  $200k → $59,870) so an incorrect future update fails CI.
 
-Effect
-- A new build now out-ranks an identical-priced older property on after-tax
-  cashflow because of depreciation (verified: ~$13k/yr yr-1 deduction, −$201/wk
-  vs −$299/wk). Standalone land tax reads correctly (often $0 below threshold —
-  the aggregation bite needs the client's existing holdings, a later deepening).
+Part of the tax & legislation review (see project docs
+terravado-tax-legislation-review.md and terravado-regulatory-compliance-review.md).
 
-Verification
-- tsc clean; verify:engine 23/23; build green.
-- Ran rankForClient on synthetic candidates: depreciation differentiates new vs
-  old; land tax computed per state; reasons surface both.
+Verified: tsc clean; verify:engine 23/23; build green.
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV

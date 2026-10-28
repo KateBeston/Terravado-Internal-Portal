@@ -37,8 +37,8 @@ export interface TaxData {
 }
 
 export const TAX_DATA: TaxData = {
-  version: "AU-2025-26",
-  effectiveFrom: "2025-07-01",
+  version: "AU-2026-27",
+  effectiveFrom: "2026-07-01",
   source: "State revenue offices & ATO. Indicative — verify before reliance.",
 
   transferDuty: {
@@ -74,14 +74,18 @@ export const TAX_DATA: TaxData = {
   trustSurchargeNoThreshold: { NSW: true },
 
   incomeTax: {
+    // 2026-27 resident scale: nil / 15% / 30% / 37% / 45%. (2025-26 used 16% on
+    // the 18,201–45,000 band, base 4,288; retained in prior versions.) Legislated
+    // further cut to 14% from 1 Jul 2027.
     AU: (ti) => {
-      const t = ti <= 18200 ? 0 : ti <= 45000 ? .16 * (ti - 18200) : ti <= 135000 ? 4288 + .30 * (ti - 45000)
-        : ti <= 190000 ? 31288 + .37 * (ti - 135000) : 51638 + .45 * (ti - 190000);
-      return t + ti * .02; // + Medicare levy
+      const t = ti <= 18200 ? 0 : ti <= 45000 ? .15 * (ti - 18200) : ti <= 135000 ? 4020 + .30 * (ti - 45000)
+        : ti <= 190000 ? 31020 + .37 * (ti - 135000) : 51370 + .45 * (ti - 190000);
+      return t + ti * .02; // + Medicare levy (2%)
     },
   },
   marginalRate: {
-    AU: (ti) => ti <= 18200 ? 0 : ti <= 45000 ? 18 : ti <= 135000 ? 32 : ti <= 190000 ? 39 : 47,
+    // Incl. Medicare (2%): 0 / 17 / 32 / 39 / 47.
+    AU: (ti) => ti <= 18200 ? 0 : ti <= 45000 ? 17 : ti <= 135000 ? 32 : ti <= 190000 ? 39 : 47,
   },
   gstRate: 0.10,
   cgtDiscount: { individual: .50, company: 0, smsf: 1 / 3 },

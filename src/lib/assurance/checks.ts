@@ -79,8 +79,8 @@ const referenceChecks: CheckDef[] = [
     8000, () => modelDepreciation({ mode: "assumed", constructionCost: 320000, buildYear: 2015 }, 1).rows[0].div43),
   ref("dep-div40-dv-y1", "Depreciation", "Div 40 diminishing value: $5,000 asset, 10-yr life → $1,000 year 1", "ATO — Div 40 diminishing value (200%/life)",
     1000, () => modelDepreciation({ mode: "schedule", div40: [{ name: "Asset", value: 5000, life: 10, method: "Diminishing value" }] }, 1).rows[0].div40),
-  ref("inctax-au-100k", "Income tax", "AU income tax + Medicare on $100,000", "ATO — individual rates 2025–26", 22788, () => TAX_DATA.incomeTax.AU(100000)),
-  ref("inctax-au-200k", "Income tax", "AU income tax + Medicare on $200,000", "ATO — individual rates 2025–26", 60138, () => TAX_DATA.incomeTax.AU(200000)),
+  ref("inctax-au-100k", "Income tax", "AU income tax + Medicare on $100,000", "ATO — individual rates 2026–27", 22520, () => TAX_DATA.incomeTax.AU(100000)),
+  ref("inctax-au-200k", "Income tax", "AU income tax + Medicare on $200,000", "ATO — individual rates 2026–27", 59870, () => TAX_DATA.incomeTax.AU(200000)),
   {
     id: "cgt-individual", category: "CGT", description: "Individual CGT discount = 50%",
     source: "ATO — CGT discount",
