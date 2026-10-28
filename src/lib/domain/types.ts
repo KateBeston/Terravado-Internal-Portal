@@ -241,6 +241,7 @@ export interface PropertyDetails {
   sales?: SaleRecord[];
   modelling?: PropertyModelling;
   tax?: PropertyTax;
+  currentLoanBalance?: number;   // actual outstanding loan today; when set, the equity chain uses it instead of the modelled balance
 }
 
 export interface Property extends Entity {

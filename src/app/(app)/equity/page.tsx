@@ -3,6 +3,7 @@ import { getCurrentTenant } from "@/lib/auth/tenant";
 import { listClients, getClient, listProperties, listLenders } from "@/lib/domain/service";
 import { dealInputs } from "@/lib/deal/pack";
 import { runEquityChain, type EquityChainCfg } from "@/lib/modelling/run";
+import { saveLoanBalancesAction } from "@/app/actions";
 import type { Property } from "@/lib/domain/types";
 
 export const dynamic = "force-dynamic";
@@ -41,16 +42,27 @@ export default async function EquityPage({ searchParams }: { searchParams: Recor
   };
 
   let E: ReturnType<typeof runEquityChain> | null = null;
-  let owned = 0;
+  let ownedProps: Property[] = [];
   if (client) {
     const all = (await listProperties(tenantId)).filter((p) => p.clientId === client.id);
-    const ownedProps = all.filter((p) => p.status === "owned");
-    owned = ownedProps.length;
+    ownedProps = all.filter((p) => p.status === "owned");
+    const lendersArg = engineLenders.length ? engineLenders : undefined;
     const placeholder = { id: "_ph", address: "", state: "NSW", price: 0, details: {} } as unknown as Property;
-    const base = dealInputs(client, ownedProps[0] ?? placeholder, engineLenders.length ? engineLenders : undefined);
-    const ownedInputs = ownedProps.map((p) => dealInputs(client, p, engineLenders.length ? engineLenders : undefined));
+    const base = dealInputs(client, ownedProps[0] ?? placeholder, lendersArg);
+    const ownedInputs = ownedProps.map((p) => {
+      const inp = dealInputs(client, p, lendersArg);
+      const bal = p.details?.currentLoanBalance;
+      // Use the actual outstanding balance where set: back it out to a deposit %
+      // so the modelled loan starts at the real figure, with no LMI on a held asset.
+      if (bal !== undefined && bal !== null && (p.price ?? 0) > 0) {
+        inp.depositPct = Math.min(100, Math.max(0, (1 - bal / (p.price as number)) * 100));
+        inp.modelling = { ...(inp.modelling ?? {}), capitaliseLmi: false };
+      }
+      return inp;
+    });
     E = runEquityChain(base, ownedInputs, cfg);
   }
+  const owned = ownedProps.length;
 
   return (
     <section>
@@ -104,6 +116,33 @@ export default async function EquityPage({ searchParams }: { searchParams: Recor
             </p>
           </div>
 
+          <div className="panel">
+            <h2>Current loan balances</h2>
+            <p className="muted" style={{ marginTop: -4, fontSize: 12 }}>
+              The actual outstanding loan on each owned property today. Where set, the chain uses it; otherwise it falls back to
+              the modelled balance from the property&apos;s assumptions. Current value is the property&apos;s price on its record.
+            </p>
+            {ownedProps.length === 0 ? <p className="muted">No owned properties to set balances for.</p> : (
+              <form action={saveLoanBalancesAction}>
+                <input type="hidden" name="clientId" value={client.id} />
+                <input type="hidden" name="ids" value={ownedProps.map((p) => p.id).join(",")} />
+                <table>
+                  <thead><tr><th>Property</th><th>Current value</th><th>Current loan balance</th></tr></thead>
+                  <tbody>
+                    {ownedProps.map((p) => (
+                      <tr key={p.id}>
+                        <td><strong>{p.address}</strong></td>
+                        <td>{money(p.price)}</td>
+                        <td><input name={`bal_${p.id}`} inputMode="numeric" defaultValue={p.details?.currentLoanBalance ?? ""} placeholder="modelled" style={{ width: 140 }} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <button className="btn" type="submit">Save balances</button>
+              </form>
+            )}
+          </div>
+
           <div className="cards">
             <div className="card"><div className="k">Equity ready</div><div className="v">{E.readyYear ? "Year " + E.readyYear : "—"}</div></div>
             <div className="card"><div className="k">Serviceability</div><div className="v">{E.servYear ? "Year " + E.servYear : "—"}</div></div>
@@ -142,7 +181,9 @@ export default async function EquityPage({ searchParams }: { searchParams: Recor
                 ))}
               </tbody>
             </table>
-            {owned === 0 && <p className="muted" style={{ fontSize: 12 }}>{client.name} has no properties marked <em>owned</em> yet, so there is no equity to recycle — mark holdings as owned on their records to model the chain.</p>}
+            {owned === 0
+              ? <p className="muted" style={{ fontSize: 12 }}>{client.name} has no properties marked <em>owned</em> yet, so there is no equity to recycle — mark holdings as owned on their records to model the chain.</p>
+              : <p className="muted" style={{ fontSize: 12 }}>Usable equity = projected value × release LVR − loan balance, per owned property, using the actual balance where set above.</p>}
           </div>
         </>
       )}

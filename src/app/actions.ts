@@ -386,6 +386,23 @@ export async function saveLandTaxInputsAction(fd: FormData) {
   if (clientId) redirect(`/portfolio?clientId=${clientId}`);
 }
 
+/* Save actual current loan balances for a client's owned properties in one go,
+   then recompute the equity chain. Field names are bal_<propertyId>. */
+export async function saveLoanBalancesAction(fd: FormData) {
+  await requireUser();
+  const { tenantId } = await getCurrentTenant();
+  const ids = (s(fd, "ids") ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+  const clientId = s(fd, "clientId");
+  for (const id of ids) {
+    const p = await svc.getProperty(tenantId, id);
+    if (!p) continue;
+    const details = { ...(p.details ?? {}), currentLoanBalance: n(fd, `bal_${id}`) };
+    await svc.updateProperty(tenantId, id, { details });
+  }
+  revalidatePath("/equity");
+  if (clientId) redirect(`/equity?clientId=${clientId}`);
+}
+
 export async function addPropertyListItemAction(fd: FormData) {
   await requireUser();
   const { tenantId } = await getCurrentTenant();

@@ -1,27 +1,18 @@
-Port the equity chain into the portal (INTERNAL-PORTAL)
+Equity chain: run off actual current loan balances (INTERNAL-PORTAL)
 
-The last of the three features out of the retired Workspace. Models when a
-client can fund their NEXT acquisition: usable equity across the owned
-portfolio projected forward (the equity test) against the lender's capacity for
-the new loan (the serviceability test), naming the blocker — "equity without
-capacity is not a purchase".
+The equity chain projected each owned property's loan from the modelling
+assumptions. This lets you enter the actual outstanding balance per property so
+usable equity reflects reality, falling back to the modelled balance where none
+is set.
 
 What's new
-- runEquityChain() bridge (src/lib/modelling/run.ts) — assembles a modeller
-  context from the client's owned holdings (via dealInputs/core) and drives the
-  engine's equityChain(). No new engine maths; reuses the verified function.
-- /equity page (gated on the "portfolio" capability) — client selector,
-  next-acquisition inputs (target price, deposit, costs, release LVR, yield,
-  horizon, lender), go-year / equity-ready / serviceability KPIs, the blocker
-  warning, and the year-by-year table (usable equity vs cash needed, capacity,
-  DTI, and whether both tests pass).
-- Nav entry next to Portfolio.
-
-Notes
-- Inputs are transient planning params carried in the query string, not
-  persisted — the chain is a what-if.
-- Equity is projected from each owned property's modelling assumptions (same
-  basis as the Modeller); only properties marked "owned" are recycled.
+- currentLoanBalance on the property record (PropertyDetails) — stored in the
+  existing properties.details jsonb, no migration.
+- "Current loan balances" editor on /equity — set each owned property's actual
+  outstanding loan, saved in one go (saveLoanBalancesAction).
+- Equity chain uses it: the actual balance is backed out to a deposit % so the
+  modelled loan starts at the real figure (no LMI on a held asset). Usable
+  equity = projected value x release LVR - that balance, per owned property.
 
 Verification
 - tsc --noEmit clean
