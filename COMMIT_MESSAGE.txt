@@ -1,27 +1,30 @@
-Atlas map: add LGA (council) boundary level (INTERNAL-PORTAL)
+Add the Shortlist engine — model-backed, per-client property ranking (INTERNAL-PORTAL)
 
-Adds councils to the boundary-level selector — I sourced the LGA polygons myself
-since the data.gov.au file wasn't downloading for you.
+The generalisation of stock matching into the north-star feature: rank candidate
+properties for a specific client by running each through the full modelling
+engine, not four preference weights. "Best on paper, for this person," explained.
 
 What's new
-- "LGA — council" level in the boundary selector (State / SA4 / SA3 / LGA),
-  loaded on demand from /geo/lga.json, with the same cascading state filter and
-  click-to-zoom as the other levels.
-- LGA boundaries (563 councils) sourced from the public npm package
-  `which-boundary` (ABS LGA shapefile, decoded from geobuf), simplified and
-  slimmed to code / name / state, ~1.3 MB, served from public/geo.
-- Finer-level note updated (councils now in; suburb level still to follow).
-
-Notes
-- These LGAs are the ABS 2016 edition (what that package ships) — council
-  boundaries are largely stable, fine for the map; swap in a newer ABS LGA file
-  later the same way if you want the latest.
-- Still coloured by an indicative value until real regional data (ABS Regional
-  Population / CoreLogic) is connected.
+- rankForClient() (src/lib/shortlist): for each candidate it runs runModel
+  against the client's serviceability position and the area's growth, then ranks
+  by the engine verdict — tilted by the client's goal (balanced / cashflow /
+  growth) and their criteria (min yield, state, min beds). A property that isn't
+  serviceable can't be a top pick. Every rank carries its working (verdict,
+  serviceability, after-tax weekly, yield, projected equity).
+- /shortlist page (nav "Shortlist", gated on the clients capability): pick a
+  client + goal + criteria; it ranks the pool and shows the top 10 with a "Why"
+  breakdown per row, the client's borrowing capacity, and the top pick.
+- Candidate pool for this first slice: the tenant's "considering" properties +
+  available/under-offer stock lots. The engine takes Candidate[] from any source,
+  so a listings feed slots in later as another source.
+- Framed as a shortlist to investigate, not advice — it models the data, not
+  condition / aspect / flooding / vendor circumstances.
 
 Verification
-- tsc --noEmit clean; npm run build green.
-- Booted next start: /atlas/map → HTTP 200; /geo/lga.json served (200, ~1.3 MB).
+- tsc clean; verify:engine 23/23; build green; /shortlist → HTTP 200.
+- Ran rankForClient directly on synthetic candidates: sensible ordering (cheap
+  high-yield tops a cashflow goal; a $1.25m low-yield over-capacity property
+  ranks last and is flagged not serviceable), with full reasons.
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV
