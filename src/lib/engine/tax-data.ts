@@ -19,6 +19,35 @@ export function bracket(v: number, rows: number[][]): number {
 
 export const todayISO = (): string => new Date().toISOString().slice(0, 10);
 
+/* --- Medicare levy, surcharge & Division 293 (FEDERAL) ---------------------
+   Thresholds are indexed/legislated annually — maintain alongside the tax scale.
+   Single-rate figures; family thresholds add a dependants dimension later. */
+export const MEDICARE = { pct: 0.02, lowerSingle: 26000, upperSingle: 32500 }; // 2024-25 single thresholds
+
+/** Medicare levy with the low-income phase-in (nil below the lower threshold,
+    10% of the excess through the shade-in band, full 2% above the upper). */
+export function medicareLevy(ti: number): number {
+  if (ti <= MEDICARE.lowerSingle) return 0;
+  if (ti <= MEDICARE.upperSingle) return 0.10 * (ti - MEDICARE.lowerSingle);
+  return MEDICARE.pct * ti;
+}
+
+/** Medicare Levy Surcharge — singles WITHOUT private patient hospital cover.
+    2025-26 single tiers: 1% $97,001–113,000, 1.25% $113,001–151,000, 1.5% above. */
+export function medicareLevySurcharge(ti: number, hasPrivateHospitalCover: boolean): number {
+  if (hasPrivateHospitalCover) return 0;
+  const rate = ti <= 97000 ? 0 : ti <= 113000 ? 0.01 : ti <= 151000 ? 0.0125 : 0.015;
+  return rate * ti;
+}
+
+/** Division 293 — extra 15% on concessional super contributions where income
+    (incl. those contributions) exceeds $250,000, on the lesser of the
+    contributions and the amount over the threshold. */
+export function division293(incomePlusContributions: number, concessionalContributions: number): number {
+  const over = Math.max(0, incomePlusContributions - 250000);
+  return 0.15 * Math.min(Math.max(0, concessionalContributions), over);
+}
+
 export interface TaxData {
   version: string;
   effectiveFrom: string;
@@ -80,7 +109,7 @@ export const TAX_DATA: TaxData = {
     AU: (ti) => {
       const t = ti <= 18200 ? 0 : ti <= 45000 ? .15 * (ti - 18200) : ti <= 135000 ? 4020 + .30 * (ti - 45000)
         : ti <= 190000 ? 31020 + .37 * (ti - 135000) : 51370 + .45 * (ti - 190000);
-      return t + ti * .02; // + Medicare levy (2%)
+      return t + medicareLevy(ti); // + Medicare levy (2%, with low-income phase-in)
     },
   },
   marginalRate: {

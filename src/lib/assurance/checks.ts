@@ -10,7 +10,7 @@
    figure still matches the live source, since real rates and policies move.
    =========================================================================== */
 
-import { TAX_DATA } from "../engine/tax-data";
+import { TAX_DATA, medicareLevy, medicareLevySurcharge, division293 } from "../engine/tax-data";
 import { aggregateLandTax } from "../engine/landtax";
 import { modelDepreciation } from "../engine/depreciation";
 import { disposalCgt } from "../engine/cgt";
@@ -90,6 +90,10 @@ const referenceChecks: CheckDef[] = [
     120000, () => disposalCgt({ entityType: "individual", salePrice: 800000, purchasePrice: 600000, heldMonths: 24, foreignResident: true }).frcgwWithheld),
   ref("inctax-au-100k", "Income tax", "AU income tax + Medicare on $100,000", "ATO — individual rates 2026–27", 22520, () => TAX_DATA.incomeTax.AU(100000)),
   ref("inctax-au-200k", "Income tax", "AU income tax + Medicare on $200,000", "ATO — individual rates 2026–27", 59870, () => TAX_DATA.incomeTax.AU(200000)),
+  ref("medicare-phasein-30k", "Medicare", "Medicare levy low-income phase-in at $30,000 → $400", "ATO — Medicare levy thresholds (single)", 400, () => medicareLevy(30000)),
+  ref("medicare-nil-25k", "Medicare", "Medicare levy nil below the threshold ($25,000)", "ATO — Medicare levy thresholds (single)", 0, () => medicareLevy(25000)),
+  ref("mls-single-160k", "Medicare", "MLS: single on $160,000 without hospital cover → $2,400 (1.5%)", "ATO — Medicare Levy Surcharge (single tiers)", 2400, () => medicareLevySurcharge(160000, false)),
+  ref("div293-27_5k", "Super tax", "Division 293: $300k income + $27,500 concessional → $4,125 (15%)", "ATO — Division 293 ($250k threshold)", 4125, () => division293(300000, 27500)),
   {
     id: "cgt-individual", category: "CGT", description: "Individual CGT discount = 50%",
     source: "ATO — CGT discount",

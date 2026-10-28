@@ -1,32 +1,24 @@
-Add the Regulatory Watch + alert system (INTERNAL-PORTAL)
+Add Medicare levy thresholds, MLS and Division 293 (INTERNAL-PORTAL)
 
-Fortnightly monitoring of the regulators that touch property, lending, financial
-services, real estate, AML, trusts and accounting, with in-portal alerts.
+Fills the Medicare/super-tax gaps from the tax review and makes the income-tax
+calc accurate at low incomes.
 
-What's new
-- Sources registry (src/lib/integrations/regwatch) — seeded bodies (ASIC, APRA,
-  ACCC, RBA, AUSTRAC, ATO, TPB, Revenue NSW, SRO Vic, NSW Fair Trading) each with
-  a category and an RSS/newsroom feed; overridable via REGWATCH_SOURCES. An
-  RSS/Atom parser + collectRegulatoryItems() fetches all, parses, and skips any
-  source that's unreachable or unparseable.
-- regulatory_alerts table (migration 0023) — shared public-data feed,
-  de-duplicated by url; RLS lets any signed-in user read, refresh and acknowledge.
-- /regulatory-watch page (nav "Regulatory Watch", gated on integrations): Check
-  now, mark-all-read, category filters, the alert list with source links and
-  per-row mark-read. A nav badge shows the unread count.
-- Fortnightly automation: /api/regwatch + a Vercel Cron (1st & 15th). The cron is
-  the one isolated, env-gated service-role path, for PUBLIC data only — inert
-  unless CRON_SECRET + the service key are set; the authenticated "Check now" is
-  the primary path. It surfaces that something changed and links to it; it does
-  not interpret the law.
+- Medicare levy now uses the low-income phase-in (nil below the threshold, 10%
+  shade-in band, full 2% above) instead of a flat 2% — wired into incomeTax.AU,
+  so it flows through every after-tax and serviceability figure. (At $100k/$200k
+  the full 2% still applies, so those checks are unchanged.)
+- Medicare Levy Surcharge — single tiers (1% / 1.25% / 1.5%) for those without
+  private hospital cover, as medicareLevySurcharge(ti, hasCover).
+- Division 293 — the extra 15% "super tax" on concessional contributions where
+  income + contributions exceed $250,000, as division293(incomePlusContrib,
+  concessional). Both are exported engine functions ready to wire to a
+  private-cover flag and a super-contributions input.
+- tax-data: MEDICARE constants (single thresholds, indexed annually — maintain
+  with the tax scale).
+- Assurance: 4 new known-answer checks (levy phase-in $400; levy nil; MLS $2,400;
+  Div 293 $4,125). Suite now 31/31.
 
-Honesty / verification
-- tsc clean; build green. Booted next start: /regulatory-watch -> 200;
-  /api/regwatch -> 401 without the secret.
-- The build sandbox can't reach the regulator sites, so the feed fills in once
-  deployed (Vercel can); it degrades to an empty feed, never errors.
-
-See project docs terravado-regulatory-compliance-review.md (section 9 design).
+Verified: tsc clean; verify:engine 31/31; build green.
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_015DMV1vb1QzHwYuwMuVbkoV
