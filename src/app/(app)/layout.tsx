@@ -1,4 +1,5 @@
 import Nav from "@/components/Nav";
+import BackBar from "@/components/BackBar";
 import { getUser } from "@/lib/auth/session";
 import { getCurrentTenant, getTenantRoles } from "@/lib/auth/tenant";
 import { effectiveCapabilities } from "@/lib/auth/capabilities";
@@ -34,7 +35,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         engineVersion={ENGINE_VERSION}
         taxVersion={TAX_DATA.version}
       />
-      <main className="main">{children}</main>
+      <main className="main"><BackBar />{children}</main>
     </div>
   );
 }

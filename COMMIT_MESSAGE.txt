@@ -1,18 +1,18 @@
-Fix Atlas server-side exception — move charts to a client component (INTERNAL-PORTAL)
+Add a consistent Back control across the portal (INTERNAL-PORTAL)
 
-The Atlas Overview is a Server Component and was passing the Chart's formatter
-functions (tip / yFmt) as props into Chart, which is a Client Component. Next.js
-can't pass functions across the server→client boundary, so the page threw a
-server-side exception at render time (it built clean because the page is dynamic,
-so the build never executed it).
+Every screen below the top level now has a "← Back" link; the portal no longer
+relies solely on the sidebar.
 
-Fix
-- New client component AtlasCharts renders both Overview charts; the server page
-  passes only the plain data arrays, so no functions cross the boundary.
+What's new
+- BackBar component in the app layout, so it appears automatically on every
+  authed page with no per-page edits. It derives the parent from the path:
+  a record tab goes back to the record, a record to its list, a section
+  sub-page to the section. Top-level pages (reachable from the sidebar, e.g.
+  /properties, /atlas) show nothing.
 
 Verified
-- Booted next start and loaded the routes: /atlas -> HTTP 200 (Atlas, Hotspots and
-  the growth stats render), /atlas/map -> HTTP 200. No exception.
+- Booted next start: /atlas/map shows Back (HTTP 200); /properties (top-level)
+  shows none (HTTP 200).
 - tsc --noEmit clean; npm run build green.
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
